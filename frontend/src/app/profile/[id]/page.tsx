@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -6,6 +5,7 @@ import axios from 'axios';
 import { User } from '@/types';
 import { UserCircle, MapPin, BookOpen, GraduationCap, MessageCircle, ArrowLeft } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import { API_URL } from '@/lib/api';
 
 export default function TutorProfilePage() {
   const params = useParams();
@@ -28,13 +28,13 @@ export default function TutorProfilePage() {
       const tutorId = params.id as string;
       
       // Récupérer le profil du répétiteur
-      const tutorResponse = await axios.get(`http://localhost:5001/api/users/${tutorId}`, {
+      const tutorResponse = await axios.get(`${API_URL}/users/${tutorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTutor(tutorResponse.data);
       
       // Récupérer l'utilisateur courant
-      const userResponse = await axios.get('http://localhost:5001/api/users/me', {
+      const userResponse = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCurrentUser(userResponse.data);
@@ -50,7 +50,7 @@ export default function TutorProfilePage() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5001/api/users/conversation',
+        `${API_URL}/users/conversation`,
         { tutorId: tutor?._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -8,6 +7,7 @@ import axios from 'axios';
 import ChatWindow from '@/components/ChatWindow';
 import MobileNav from '@/components/MobileNav';
 import { Conversation, Message, User } from '@/types';
+import { API_URL } from '@/lib/api';
 
 // Composant interne qui utilise useSearchParams
 function ChatContent() {
@@ -32,13 +32,13 @@ function ChatContent() {
   const fetchData = async (token: string) => {
     setLoading(true);
     try {
-      const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/me`, {
+      const userResponse = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const currentUserData = userResponse.data;
       setCurrentUser(currentUserData);
       
-      const convResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/conversations`, {
+      const convResponse = await axios.get(`${API_URL}/users/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const conversationsData = convResponse.data;
@@ -51,7 +51,7 @@ function ChatContent() {
           const otherId = conv.participants.find((id: string) => id !== currentUserData._id);
           if (otherId) {
             try {
-              const otherUserResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/${otherId}`, {
+              const otherUserResponse = await axios.get(`${API_URL}/users/${otherId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               setOtherUser(otherUserResponse.data);

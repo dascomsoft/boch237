@@ -1,10 +1,10 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Search, MapPin, BookOpen, Clock, Eye, Filter } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import { API_URL } from '@/lib/api';
 
 interface Annonce {
   _id: string;
@@ -40,7 +40,7 @@ export default function AnnoncesPage() {
 
   const fetchUser = async (token: string) => {
     try {
-      const response = await axios.get('http://localhost:5001/api/users/me', {
+      const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
@@ -51,7 +51,7 @@ export default function AnnoncesPage() {
 
   const fetchAnnonces = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/api/annonces');
+      const response = await axios.get(`${API_URL}/annonces`);
       setAnnonces(response.data);
     } catch (error) {
       console.error('Erreur chargement annonces:', error);
@@ -68,7 +68,7 @@ export default function AnnoncesPage() {
       if (filters.class) params.append('class', filters.class);
       if (filters.city) params.append('city', filters.city);
       
-      const response = await axios.get(`http://localhost:5001/api/annonces?${params}`);
+      const response = await axios.get(`${API_URL}/annonces?${params}`);
       setAnnonces(response.data);
     } catch (error) {
       console.error('Erreur recherche:', error);
