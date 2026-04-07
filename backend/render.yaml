@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: boch237-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://dascomsoft_db_user:godlove@heyamatest.rhkrdlp.mongodb.net/boch237?retryWrites=true&w=majority&appName=HeyamaTest
+      - key: JWT_SECRET
+        value: super_secret_boch237_2025
+      - key: PORT
+        value: 5001
