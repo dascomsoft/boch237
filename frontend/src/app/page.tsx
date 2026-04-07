@@ -23,26 +23,36 @@ export default function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      fetchUserProfile(token);
+    
+    // Si pas de token, rediriger vers login
+    if (!token) {
+      router.push('/login');
+      return;
     }
+    
+    fetchUserProfile(token);
     fetchAllTutors();
   }, []);
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const response = await axios.get('http://localhost:5001/api/users/me', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+      const response = await axios.get(`${apiUrl}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
     } catch (error) {
       console.error('Erreur profil:', error);
+      // Si erreur d'authentification, rediriger vers login
+      localStorage.removeItem('token');
+      router.push('/login');
     }
   };
 
   const fetchAllTutors = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/api/users/tutors');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+      const response = await axios.get(`${apiUrl}/users/tutors`);
       setTutors(response.data);
     } catch (error) {
       console.error('Erreur chargement:', error);
@@ -52,7 +62,8 @@ export default function Home() {
   const searchTutors = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5001/api/users/tutors', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+      const response = await axios.get(`${apiUrl}/users/tutors`, {
         params: filters
       });
       setTutors(response.data);
@@ -65,24 +76,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
-      {/* Header */}
       <div className="bg-green-600 p-4 sticky top-0 z-10 shadow-lg">
         <h1 className="text-xl font-bold text-white text-center">
-          📚 Cours Repetitions Cameroun
+          📚 Boch237 - Cours Cameroun
         </h1>
         {user && (
           <p className="text-green-100 text-sm text-center mt-1">
-            Bonjour {user.name} 
+            Bonjour {user.name} 👋
           </p>
         )}
       </div>
 
-      {/* Bouton Publier une annonce - visible seulement pour les parents */}
       {user && user.role === 'parent' && (
         <div className="p-4">
           <button
             onClick={() => router.push('/annonces/creer')}
-            className="w-full bg-linear-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+            className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
           >
             <Megaphone size={20} />
             Publier une annonce de besoin de cours
@@ -94,7 +103,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Search Section */}
       <div className="p-4">
         <SearchBar 
           filters={filters}
@@ -104,7 +112,6 @@ export default function Home() {
         />
       </div>
 
-      {/* Results Section */}
       <div className="p-4">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-white font-bold text-lg">
