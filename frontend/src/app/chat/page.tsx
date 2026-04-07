@@ -1,13 +1,16 @@
+export const dynamic = 'force-dynamic';
 
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ChatWindow from '@/components/ChatWindow';
 import MobileNav from '@/components/MobileNav';
 import { Conversation, Message, User } from '@/types';
 
-export default function ChatPage() {
+// Composant interne qui utilise useSearchParams
+function ChatContent() {
   const searchParams = useSearchParams();
   const conversationId = searchParams.get('convId');
   
@@ -29,31 +32,26 @@ export default function ChatPage() {
   const fetchData = async (token: string) => {
     setLoading(true);
     try {
-      // Récupérer l'utilisateur courant
-      const userResponse = await axios.get('http://localhost:5001/api/users/me', {
+      const userResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const currentUserData = userResponse.data;
       setCurrentUser(currentUserData);
       
-      // Récupérer les conversations
-      const convResponse = await axios.get('http://localhost:5001/api/users/conversations', {
+      const convResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const conversationsData = convResponse.data;
       setConversations(conversationsData);
       
-      // Si une conversation est sélectionnée
       if (conversationId) {
         const conv = conversationsData.find((c: Conversation) => c._id === conversationId);
         if (conv) {
           setCurrentConversation(conv);
-          
-          // Trouver l'autre participant
           const otherId = conv.participants.find((id: string) => id !== currentUserData._id);
           if (otherId) {
             try {
-              const otherUserResponse = await axios.get(`http://localhost:5001/api/users/${otherId}`, {
+              const otherUserResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/${otherId}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               setOtherUser(otherUserResponse.data);
@@ -125,5 +123,18 @@ export default function ChatPage() {
       )}
       <MobileNav userRole={currentUser?.role} />
     </div>
+  );
+}
+
+// Page principale avec Suspense boundary
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   );
 }
