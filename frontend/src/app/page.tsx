@@ -8,6 +8,7 @@ import TutorCard from '@/components/TutorCard';
 import MobileNav from '@/components/MobileNav';
 import { User, SearchFilters } from '@/types';
 import { Megaphone, PlusCircle } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 export default function Home() {
   const router = useRouter();
@@ -23,27 +24,22 @@ export default function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    
-    // Si pas de token, rediriger vers login
     if (!token) {
       router.push('/login');
       return;
     }
-    
     fetchUserProfile(token);
     fetchAllTutors();
   }, []);
 
   const fetchUserProfile = async (token: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(`${apiUrl}/users/me`, {
+      const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
     } catch (error) {
       console.error('Erreur profil:', error);
-      // Si erreur d'authentification, rediriger vers login
       localStorage.removeItem('token');
       router.push('/login');
     }
@@ -51,8 +47,7 @@ export default function Home() {
 
   const fetchAllTutors = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(`${apiUrl}/users/tutors`);
+      const response = await axios.get(`${API_URL}/users/tutors`);
       setTutors(response.data);
     } catch (error) {
       console.error('Erreur chargement:', error);
@@ -62,8 +57,7 @@ export default function Home() {
   const searchTutors = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(`${apiUrl}/users/tutors`, {
+      const response = await axios.get(`${API_URL}/users/tutors`, {
         params: filters
       });
       setTutors(response.data);
