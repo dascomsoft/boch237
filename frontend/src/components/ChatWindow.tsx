@@ -27,18 +27,23 @@ export default function ChatWindow({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Utilisation de SOCKET_URL depuis la configuration centralisée
     const newSocket = io(SOCKET_URL, {
-      auth: { userId: currentUserId }
+      auth: { userId: currentUserId },
+      transports: ['websocket', 'polling'] // fallback si websocket échoue
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connecté');
+      console.log('Socket connecté à', SOCKET_URL);
       newSocket.emit('join_conversation', conversationId);
     });
 
     newSocket.on('new_message', (message: Message) => {
       onNewMessage(message);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Erreur de connexion Socket:', error);
     });
 
     setSocket(newSocket);
@@ -59,13 +64,14 @@ export default function ChatWindow({
   const sendMessage = () => {
     if (!newMessage.trim() || !socket) return;
 
+    // Détection des numéros de téléphone camerounais
     const phoneRegex = /(\+237|237)?[6,2,9][0-9]{8}/g;
     const hasPhoneNumber = phoneRegex.test(newMessage);
     
     if (hasPhoneNumber) {
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
-      alert("⚠️ Le partage de numéro de téléphone est interdit pour votre sécurité.");
+      alert("⚠️ Le partage de numéro de téléphone est interdit pour votre sécurité. Utilisez le chat pour communiquer.");
       return;
     }
 
@@ -82,17 +88,31 @@ export default function ChatWindow({
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
+      {/* Header */}
       <div className="bg-green-600 p-4 sticky top-0 z-10">
         <h3 className="text-white font-bold">{otherUser?.name || 'Chat'}</h3>
-        <p className="text-green-100 text-sm">{otherUser?.city} - {otherUser?.district}</p>
+        <p className="text-green-100 text-sm">
+          {otherUser?.city} - {otherUser?.district}
+        </p>
       </div>
 
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((message, index) => {
           const isCurrentUser = message.senderId === currentUserId;
+          
           return (
-            <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} message-enter`}>
-              <div className={`max-w-[70%] p-3 rounded-lg ${isCurrentUser ? 'bg-green-600 text-white rounded-br-none' : 'bg-slate-800 text-gray-200 rounded-bl-none'}`}>
+            <div
+              key={index}
+              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} message-enter`}
+            >
+              <div
+                className={`max-w-[70%] p-3 rounded-lg ${
+                  isCurrentUser
+                    ? 'bg-green-600 text-white rounded-br-none'
+                    : 'bg-slate-800 text-gray-200 rounded-bl-none'
+                }`}
+              >
                 {message.isAlert && (
                   <div className="flex items-center gap-1 text-yellow-400 text-xs mb-1">
                     <AlertCircle size={12} /> Message signalé
@@ -109,11 +129,13 @@ export default function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input */}
       <div className="bg-slate-800 p-4 border-t border-green-500">
         {showAlert && (
           <div className="bg-red-600/20 border border-red-500 rounded-lg p-2 mb-2">
             <p className="text-red-400 text-xs flex items-center gap-1">
-              <AlertCircle size={14} /> ⚠️ Les numéros de téléphone sont automatiquement bloqués
+              <AlertCircle size={14} /> 
+              ⚠️ Les numéros de téléphone sont automatiquement bloqués
             </p>
           </div>
         )}
