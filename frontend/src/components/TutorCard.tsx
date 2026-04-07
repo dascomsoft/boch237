@@ -1,10 +1,9 @@
-
-
 'use client';
 import { MessageCircle, MapPin, BookOpen, CheckCircle, XCircle, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { User as UserType } from '@/types';
+import { API_URL } from '@/lib/api';
 
 interface TutorCardProps {
   tutor: UserType;
@@ -22,14 +21,14 @@ export default function TutorCard({ tutor }: TutorCardProps) {
       }
 
       const response = await axios.post(
-        'http://localhost:5001/api/users/conversation',
+        `${API_URL}/users/conversation`,
         { tutorId: tutor._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       router.push(`/chat?convId=${response.data._id}`);
     } catch (error) {
-      console.error('Erreur lors du démarrage du chat:', error);
+      console.error('Erreur:', error);
     }
   };
 
@@ -46,33 +45,16 @@ export default function TutorCard({ tutor }: TutorCardProps) {
             <MapPin size={14} /> {tutor.city} - {tutor.district || 'Quartier non spécifié'}
           </div>
         </div>
-        <div className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
-          tutor.isActive ? 'bg-green-600' : 'bg-gray-600'
-        }`}>
-          {tutor.isActive ? (
-            <>
-              <CheckCircle size={10} /> Actif
-            </>
-          ) : (
-            <>
-              <XCircle size={10} /> Indisponible
-            </>
-          )}
+        <div className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${tutor.isActive ? 'bg-green-600' : 'bg-gray-600'}`}>
+          {tutor.isActive ? <><CheckCircle size={10} /> Actif</> : <><XCircle size={10} /> Indisponible</>}
         </div>
       </div>
       
       {tutor.subjects && tutor.subjects.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {tutor.subjects.slice(0, 3).map((subject, index) => (
-            <span key={index} className="bg-green-600/20 text-green-400 px-2 py-1 rounded-lg text-xs">
-              {subject}
-            </span>
+            <span key={index} className="bg-green-600/20 text-green-400 px-2 py-1 rounded-lg text-xs">{subject}</span>
           ))}
-          {tutor.subjects.length > 3 && (
-            <span className="bg-slate-700 text-gray-400 px-2 py-1 rounded-lg text-xs">
-              +{tutor.subjects.length - 3}
-            </span>
-          )}
         </div>
       )}
       
@@ -80,15 +62,13 @@ export default function TutorCard({ tutor }: TutorCardProps) {
         <button 
           onClick={startChat}
           disabled={!tutor.isActive}
-          className={`flex-1 text-white p-2 rounded-lg flex items-center justify-center gap-2 text-sm ${
-            tutor.isActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'
-          } transition-colors`}
+          className={`flex-1 text-white p-2 rounded-lg flex items-center justify-center gap-2 text-sm ${tutor.isActive ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'}`}
         >
           <MessageCircle size={16} /> Démarrer le chat
         </button>
         <button 
           onClick={viewProfile}
-          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors"
+          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg text-sm flex items-center justify-center gap-2"
         >
           <User size={16} /> Voir profil
         </button>

@@ -1,8 +1,8 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 export default function CreerAnnonce() {
   const router = useRouter();
@@ -19,7 +19,6 @@ export default function CreerAnnonce() {
     duration: 'Ponctuel'
   });
 
-  // Vérifier si l'utilisateur est connecté
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -27,10 +26,9 @@ export default function CreerAnnonce() {
       return;
     }
     
-    // Récupérer les infos de l'utilisateur
     const fetchUser = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/users/me', {
+        const response = await axios.get(`${API_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(response.data);
@@ -45,7 +43,6 @@ export default function CreerAnnonce() {
     e.preventDefault();
     setLoading(true);
     
-    // Validation
     if (!form.title || !form.description || !form.subject || !form.class || !form.city) {
       alert('Veuillez remplir tous les champs obligatoires (*)');
       setLoading(false);
@@ -54,8 +51,8 @@ export default function CreerAnnonce() {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:5001/api/annonces',
+      await axios.post(
+        `${API_URL}/annonces`,
         form,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -72,41 +69,26 @@ export default function CreerAnnonce() {
 
   return (
     <div className="min-h-screen bg-slate-900 p-4">
-      {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 p-4 rounded-lg mb-4">
-        <button 
-          onClick={() => router.back()}
-          className="text-white mb-2 flex items-center gap-1"
-        >
+        <button onClick={() => router.back()} className="text-white mb-2 flex items-center gap-1">
           ← Retour
         </button>
-        <h1 className="text-white text-xl font-bold text-center">
-          📢 Publier une annonce
-        </h1>
-        <p className="text-green-100 text-sm text-center mt-1">
-          Besoin d'un répétiteur ? Décrivez votre besoin
-        </p>
+        <h1 className="text-white text-xl font-bold text-center">📢 Publier une annonce</h1>
+        <p className="text-green-100 text-sm text-center mt-1">Besoin d'un répétiteur ? Décrivez votre besoin</p>
       </div>
 
-      {/* Info utilisateur */}
       {user && (
         <div className="bg-slate-800 rounded-xl p-3 mb-4">
           <p className="text-gray-400 text-sm">
             Vous publiez en tant que : <span className="text-green-400 font-medium">{user.name}</span>
           </p>
-          <p className="text-gray-500 text-xs mt-1">
-            📞 {user.phone}
-          </p>
+          <p className="text-gray-500 text-xs mt-1">📞 {user.phone}</p>
         </div>
       )}
 
-      {/* Formulaire */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Titre */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Titre de l'annonce <span className="text-red-400">*</span>
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Titre de l'annonce <span className="text-red-400">*</span></label>
           <input
             type="text"
             placeholder="Ex: Recherche professeur de maths pour élève de 3ème"
@@ -117,11 +99,8 @@ export default function CreerAnnonce() {
           />
         </div>
         
-        {/* Description */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Description détaillée <span className="text-red-400">*</span>
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Description détaillée <span className="text-red-400">*</span></label>
           <textarea
             placeholder="Décrivez votre besoin (niveau de l'élève, objectifs, fréquence, etc.)"
             rows={5}
@@ -132,11 +111,8 @@ export default function CreerAnnonce() {
           />
         </div>
         
-        {/* Matière */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Matière <span className="text-red-400">*</span>
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Matière <span className="text-red-400">*</span></label>
           <select
             className="w-full p-3 rounded-lg bg-slate-800 text-white border border-slate-700 focus:border-green-500 outline-none"
             required
@@ -152,16 +128,11 @@ export default function CreerAnnonce() {
             <option>Histoire-Géographie</option>
             <option>Philosophie</option>
             <option>Informatique</option>
-            <option>Espagnol</option>
-            <option>Allemand</option>
           </select>
         </div>
         
-        {/* Classe */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Classe / Niveau <span className="text-red-400">*</span>
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Classe / Niveau <span className="text-red-400">*</span></label>
           <select
             className="w-full p-3 rounded-lg bg-slate-800 text-white border border-slate-700 focus:border-green-500 outline-none"
             required
@@ -172,17 +143,11 @@ export default function CreerAnnonce() {
             <option>Primaire</option>
             <option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option>
             <option>Seconde</option><option>Première</option><option>Terminale</option>
-            <option>Form 1</option><option>Form 2</option><option>Form 3</option>
-            <option>Form 4</option><option>Form 5</option><option>Lower Sixth</option><option>Upper Sixth</option>
-            <option>Université</option>
           </select>
         </div>
         
-        {/* Ville */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Ville <span className="text-red-400">*</span>
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Ville <span className="text-red-400">*</span></label>
           <input
             type="text"
             placeholder="Ex: Yaoundé, Douala, Bafoussam..."
@@ -193,11 +158,8 @@ export default function CreerAnnonce() {
           />
         </div>
         
-        {/* Quartier */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Quartier (optionnel)
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Quartier (optionnel)</label>
           <input
             type="text"
             placeholder="Ex: Bastos, Bonapriso, Akwa..."
@@ -207,11 +169,8 @@ export default function CreerAnnonce() {
           />
         </div>
         
-        {/* Budget */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Budget proposé (FCFA) - optionnel
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Budget proposé (FCFA) - optionnel</label>
           <input
             type="number"
             placeholder="Ex: 15000"
@@ -221,11 +180,8 @@ export default function CreerAnnonce() {
           />
         </div>
         
-        {/* Durée */}
         <div>
-          <label className="text-gray-300 text-sm block mb-1">
-            Fréquence
-          </label>
+          <label className="text-gray-300 text-sm block mb-1">Fréquence</label>
           <select
             className="w-full p-3 rounded-lg bg-slate-800 text-white border border-slate-700 focus:border-green-500 outline-none"
             value={form.duration}
@@ -237,7 +193,6 @@ export default function CreerAnnonce() {
           </select>
         </div>
         
-        {/* Boutons */}
         <div className="flex gap-3 pt-4">
           <button
             type="button"
@@ -249,19 +204,17 @@ export default function CreerAnnonce() {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white p-3 rounded-lg font-bold transition-all disabled:opacity-50"
+            className="flex-1 bg-linear-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white p-3 rounded-lg font-bold transition-all disabled:opacity-50"
           >
             {loading ? 'Publication...' : '📢 Publier'}
           </button>
         </div>
       </form>
       
-      {/* Information */}
       <div className="mt-6 bg-blue-600/20 border border-blue-500 rounded-xl p-4">
         <p className="text-blue-400 text-sm font-medium">ℹ️ Information</p>
         <p className="text-gray-400 text-xs mt-1">
-          Votre annonce sera d'abord vérifiée par notre équipe avant d'être publiée. 
-          Les répétiteurs intéressés pourront vous contacter directement via la messagerie.
+          Votre annonce sera d'abord vérifiée par notre équipe avant d'être publiée.
         </p>
       </div>
     </div>

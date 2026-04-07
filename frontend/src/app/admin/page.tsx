@@ -1,11 +1,42 @@
-
 'use client';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import MobileNav from '@/components/MobileNav';
-import { Settings, FileText, PlusCircle, UserPlus, Megaphone, Users, MessageSquare } from 'lucide-react';
+import { Users, MessageSquare, Settings, FileText, PlusCircle, UserPlus, Megaphone } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 export default function AdminPage() {
   const router = useRouter();
+  const [stats, setStats] = useState({ users: 0, tutors: 0, parents: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    fetchData(token);
+  }, []);
+
+  const fetchData = async (token: string) => {
+    try {
+      const usersRes = await axios.get(`${API_URL}/users/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const users = usersRes.data;
+      setStats({
+        users: users.length,
+        tutors: users.filter((u: any) => u.role === 'tutor').length,
+        parents: users.filter((u: any) => u.role === 'parent').length
+      });
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const menuItems = [
     { icon: Megaphone, label: 'Gérer les annonces', href: '/admin/annonces', color: 'bg-blue-600', description: 'Valider, modifier ou supprimer' },
@@ -14,6 +45,14 @@ export default function AdminPage() {
     { icon: UserPlus, label: 'Ajouter un répétiteur', href: '/admin/tuteurs/ajouter', color: 'bg-orange-600', description: 'Ajouter manuellement' },
     { icon: FileText, label: 'Voir les annonces', href: '/annonces', color: 'bg-teal-600', description: 'Site public' },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
@@ -44,15 +83,21 @@ export default function AdminPage() {
       </div>
 
       <div className="px-4">
-        <h2 className="text-white font-bold mb-3">Accès rapide</h2>
+        <h2 className="text-white font-bold mb-3">Statistiques</h2>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate-800 rounded-xl p-4 text-center">
             <Users className="text-green-400 mx-auto mb-2" size={24} />
-            <p className="text-gray-400 text-sm">Gestion des utilisateurs</p>
+            <p className="text-2xl text-white font-bold">{stats.users}</p>
+            <p className="text-gray-400 text-sm">Utilisateurs</p>
+            <div className="flex justify-center gap-2 mt-2 text-xs">
+              <span className="text-green-400">{stats.tutors} tuteurs</span>
+              <span className="text-blue-400">{stats.parents} parents</span>
+            </div>
           </div>
           <div className="bg-slate-800 rounded-xl p-4 text-center">
             <MessageSquare className="text-green-400 mx-auto mb-2" size={24} />
-            <p className="text-gray-400 text-sm">Modération des annonces</p>
+            <p className="text-2xl text-white font-bold">-</p>
+            <p className="text-gray-400 text-sm">Conversations</p>
           </div>
         </div>
       </div>
