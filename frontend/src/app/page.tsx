@@ -72,7 +72,7 @@ export default function Home() {
         </h1>
         {user && (
           <p className="text-green-100 text-sm text-center mt-1">
-            Bonjour {user.name} 👋
+            Bonjour {user.name} 
           </p>
         )}
       </div>
@@ -82,7 +82,7 @@ export default function Home() {
         <div className="p-4">
           <button
             onClick={() => router.push('/annonces/creer')}
-            className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
+            className="w-full bg-linear-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg"
           >
             <Megaphone size={20} />
             Publier une annonce de besoin de cours
