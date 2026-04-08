@@ -43,29 +43,33 @@ app.get('/api/test', (req, res) => {
 });
 
 // Socket.IO
-io.on('connection', (socket) => {
-  console.log('🟢 Nouvelle connexion socket:', socket.id);
-  
-  socket.on('join_conversation', (conversationId) => {
-    socket.join(`conv_${conversationId}`);
-    console.log(`📌 Socket ${socket.id} joined conversation ${conversationId}`);
-  });
-  
-  socket.on('send_message', async (data) => {
-    console.log('📨 Message reçu:', data);
-    // ... le reste du code
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('🔴 Socket déconnecté:', socket.id);
-  });
-});
+import { setupSocket } from './socket/socketHandler.js';
+setupSocket(io);
 
 // Connexion MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/boch237';
+
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB connecté'))
+  .then(() => {
+    console.log('✅ MongoDB connecté');
+    console.log('📦 Base de données:', mongoose.connection.db.databaseName);
+  })
   .catch(err => console.error('❌ MongoDB error:', err));
+
+// 🔥 DIAGNOSTIC : Afficher le nombre de conversations au démarrage
+mongoose.connection.once('open', async () => {
+  try {
+    const Conversation = (await import('./models/Conversation.js')).default;
+    const count = await Conversation.countDocuments();
+    console.log(`📊 [STARTUP] ${count} conversations trouvées dans la base`);
+    
+    // Afficher les IDs des conversations existantes
+    const conversations = await Conversation.find().select('_id participants');
+    console.log(`📊 [STARTUP] IDs des conversations:`, conversations.map(c => c._id.toString()));
+  } catch (error) {
+    console.error('❌ Erreur diagnostic:', error);
+  }
+});
 
 const PORT = process.env.PORT || 5001;
 httpServer.listen(PORT, () => {

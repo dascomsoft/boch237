@@ -10,8 +10,12 @@ export const setupSocket = (io) => {
     next();
   });
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     console.log('🟢 User connected:', socket.userId);
+
+    // 🔥 DIAGNOSTIC : Compter les conversations
+    const totalConversations = await Conversation.countDocuments();
+    console.log('📊 TOTAL CONVERSATIONS EN DB:', totalConversations);
 
     socket.on('join_conversation', (conversationId) => {
       socket.join(`conv_${conversationId}`);
@@ -20,23 +24,26 @@ export const setupSocket = (io) => {
 
     socket.on('send_message', async (data) => {
       console.log('📨 1 - Message reçu:', data);
-
       const { conversationId, content } = data;
 
       try {
-        // 🔥 Conversion ObjectId obligatoire
-        const convId = new mongoose.Types.ObjectId(conversationId);
-
-        console.log('🔍 2 - Recherche conversation:', convId);
-
-        const conversation = await Conversation.findById(convId);
-
-        if (!conversation) {
-          console.log('❌ 3 - Conversation NON trouvée');
+        // 🔥 Vérifier si l'ID est valide
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+          console.log('❌ ID INVALIDE:', conversationId);
           return;
         }
 
-        console.log('✅ 4 - Conversation trouvée');
+        console.log('🔍 2 - Recherche conversation:', conversationId);
+        const conversation = await Conversation.findById(conversationId);
+        
+        console.log('🔍 3 - RÉSULTAT:', conversation ? `TROUVÉE (${conversation.messages.length} messages)` : 'NULL');
+
+        if (!conversation) {
+          console.log('❌ 4 - Conversation NON trouvée dans MongoDB');
+          return;
+        }
+
+        console.log('✅ 5 - Conversation trouvée');
 
         const newMessage = {
           senderId: socket.userId,
@@ -45,16 +52,14 @@ export const setupSocket = (io) => {
           isAlert: false
         };
 
-        console.log('📝 5 - Ajout message');
-
+        console.log('📝 6 - Ajout message');
         conversation.messages.push(newMessage);
         conversation.lastActivity = new Date();
 
-        console.log('💾 6 - Sauvegarde...');
+        console.log('💾 7 - Sauvegarde...');
         await conversation.save();
 
-        console.log('✅ 7 - Message sauvegardé');
-
+        console.log('✅ 8 - Message sauvegardé !');
         io.to(`conv_${conversationId}`).emit('new_message', newMessage);
 
       } catch (error) {
