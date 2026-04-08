@@ -6,6 +6,8 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ========== ROUTES SPÉCIFIQUES (avant la route dynamique) ==========
+
 router.get('/test', (req, res) => {
   res.json({ message: 'OK' });
 });
@@ -56,43 +58,21 @@ router.post('/conversation', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/:userId', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId).select('-password');
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur' });
-  }
-});
-
-// Route admin - tous les utilisateurs
+// ROUTES ADMIN (spécifiques)
 router.get('/all', authMiddleware, async (req, res) => {
-  console.log('🟢🔴🟢 ROUTE /all APPELEE !!! 🔴🟢🔴');
-  console.log('📝 userId:', req.userId);
-  
   try {
-    console.log('1. Recherche admin...');
+    console.log('🔍 Vérification admin...');
     const admin = await User.findById(req.userId);
-    console.log('2. Admin trouvé:', admin ? admin.name : 'NON');
     
-    if (!admin) {
-      console.log('❌ Admin non trouvé');
-      return res.status(403).json({ message: 'Admin non trouvé' });
-    }
-    
-    if (admin.role !== 'admin') {
-      console.log('❌ Rôle:', admin.role);
+    if (!admin || admin.role !== 'admin') {
       return res.status(403).json({ message: 'Non autorisé' });
     }
     
-    console.log('3. Récupération utilisateurs...');
     const users = await User.find({}).select('-password');
-    console.log(`✅ ${users.length} utilisateurs`);
-    
     res.json(users);
   } catch (error) {
-    console.error('❌ ERREUR:', error);
-    res.status(500).json({ message: 'Erreur', details: error.message });
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
@@ -117,6 +97,19 @@ router.patch('/:userId/status', authMiddleware, async (req, res) => {
     }
     const { isActive } = req.body;
     const user = await User.findByIdAndUpdate(req.params.userId, { isActive }, { new: true }).select('-password');
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur' });
+  }
+});
+
+// ========== ROUTE DYNAMIQUE (TOUJOURS EN DERNIER) ==========
+router.get('/:userId', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Erreur' });
