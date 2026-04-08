@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -5,6 +6,7 @@ import axios from 'axios';
 import { User, Conversation } from '@/types';
 import { UserCircle, MapPin, BookOpen, GraduationCap, MessageSquare, LogOut, Megaphone, PlusCircle } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import ContactAdminButton from '@/components/ContactAdminButton';
 import { API_URL } from '@/lib/api';
 
 export default function ProfilePage() {
@@ -61,11 +63,16 @@ export default function ProfilePage() {
           <UserCircle size={48} className="text-green-600" />
         </div>
         <h1 className="text-white text-xl font-bold">{user?.name}</h1>
-        <p className="text-green-100">{user?.role === 'tutor' ? '👨‍🏫 Répétiteur' : '👨‍👩‍👧 Parent/Élève'}</p>
+        <p className="text-green-100">
+          {user?.role === 'tutor' ? '👨‍🏫 Répétiteur' : '👨‍👩‍👧 Parent/Élève'}
+        </p>
         <p className="text-green-100 text-sm mt-1">{user?.phone}</p>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Bouton contacter l'admin - pour tous les utilisateurs */}
+        <ContactAdminButton />
+
         {user?.role === 'parent' && (
           <div className="bg-gradient-to-r from-pink-600/20 to-rose-600/20 border border-pink-500 rounded-xl p-4">
             <button
@@ -96,7 +103,9 @@ export default function ProfilePage() {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {user.subjects?.map((subject, index) => (
-                  <span key={index} className="bg-green-600/20 text-green-400 px-3 py-1 rounded-lg text-sm">{subject}</span>
+                  <span key={index} className="bg-green-600/20 text-green-400 px-3 py-1 rounded-lg text-sm">
+                    {subject}
+                  </span>
                 ))}
               </div>
             </div>
@@ -106,7 +115,9 @@ export default function ProfilePage() {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {user.classes?.map((className, index) => (
-                  <span key={index} className="bg-slate-700 text-gray-300 px-3 py-1 rounded-lg text-sm">{className}</span>
+                  <span key={index} className="bg-slate-700 text-gray-300 px-3 py-1 rounded-lg text-sm">
+                    {className}
+                  </span>
                 ))}
               </div>
             </div>
@@ -122,7 +133,11 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-2">
               {conversations.slice(0, 3).map((conv) => (
-                <div key={conv._id} className="bg-slate-900 p-2 rounded-lg cursor-pointer" onClick={() => router.push(`/chat?convId=${conv._id}`)}>
+                <div
+                  key={conv._id}
+                  className="bg-slate-900 p-2 rounded-lg cursor-pointer"
+                  onClick={() => router.push(`/chat?convId=${conv._id}`)}
+                >
                   <p className="text-gray-300 text-sm">{conv.messages.length} message(s)</p>
                 </div>
               ))}

@@ -1,9 +1,10 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import MobileNav from '@/components/MobileNav';
-import { Users, MessageSquare, Settings, FileText, PlusCircle, UserPlus, Megaphone } from 'lucide-react';
+import { Users, MessageSquare, Settings, FileText, PlusCircle, UserPlus, Megaphone, LogOut } from 'lucide-react';
 import { API_URL } from '@/lib/api';
 
 export default function AdminPage() {
@@ -38,7 +39,13 @@ export default function AdminPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/login');
+  };
+
   const menuItems = [
+    { icon: MessageSquare, label: '💬 Messages', href: '/admin/chat', color: 'bg-indigo-600', description: 'Consulter et répondre aux messages' },
     { icon: Megaphone, label: 'Gérer les annonces', href: '/admin/annonces', color: 'bg-blue-600', description: 'Valider, modifier ou supprimer' },
     { icon: PlusCircle, label: 'Ajouter une annonce', href: '/admin/annonces/ajouter', color: 'bg-green-600', description: 'Pour un parent' },
     { icon: Users, label: 'Gérer les répétiteurs', href: '/admin/tuteurs', color: 'bg-purple-600', description: 'Voir la liste' },
@@ -56,8 +63,22 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
+      {/* Header avec bouton déconnexion */}
       <div className="bg-green-600 p-4">
-        <h1 className="text-white text-xl font-bold text-center">Dashboard Administrateur</h1>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-white text-xl font-bold">Dashboard Direction</h1>
+            <p className="text-green-100 text-sm mt-1">Gérez la plateforme Cours Cameroun</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            title="Se déconnecter"
+          >
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Déconnexion</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-4">
@@ -100,6 +121,16 @@ export default function AdminPage() {
             <p className="text-gray-400 text-sm">Conversations</p>
           </div>
         </div>
+      </div>
+
+      {/* Bouton déconnexion flottant pour mobile */}
+      <div className="fixed bottom-20 right-4 sm:hidden">
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-colors"
+        >
+          <LogOut size={20} />
+        </button>
       </div>
 
       <MobileNav userRole="admin" />
