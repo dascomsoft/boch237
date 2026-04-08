@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Send, AlertCircle } from 'lucide-react';
@@ -23,35 +24,52 @@ export default function ChatWindow({
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [showAlert, setShowAlert] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Utilisation de SOCKET_URL depuis la configuration centralisée
+    // Connexion Socket.IO
     const newSocket = io(SOCKET_URL, {
       auth: { userId: currentUserId },
-      transports: ['websocket', 'polling'] // fallback si websocket échoue
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connecté à', SOCKET_URL);
+      console.log('✅ Socket connecté à', SOCKET_URL);
+      setIsConnected(true);
+      // Rejoindre la conversation après reconnexion
       newSocket.emit('join_conversation', conversationId);
     });
 
-    newSocket.on('new_message', (message: Message) => {
-      onNewMessage(message);
+    newSocket.on('disconnect', () => {
+      console.log('🔴 Socket déconnecté');
+      setIsConnected(false);
     });
 
-    newSocket.on('connect_error', (error) => {
-      console.error('Erreur de connexion Socket:', error);
+    // ✅ Écouter le BON événement (new_message - exactement comme backend)
+    newSocket.on('new_message', (message: Message) => {
+      console.log('📩 Message reçu via socket:', message);
+      onNewMessage(message);
     });
 
     setSocket(newSocket);
 
     return () => {
-      newSocket.close();
+      newSocket.disconnect();
     };
   }, [conversationId, currentUserId]);
+
+  // Rejoindre la conversation quand le socket est connecté
+  useEffect(() => {
+    if (socket && isConnected && conversationId) {
+      socket.emit('join_conversation', conversationId);
+      console.log('📌 Joined conversation:', conversationId);
+    }
+  }, [socket, isConnected, conversationId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -62,9 +80,9 @@ export default function ChatWindow({
   };
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !socket) return;
+    if (!newMessage.trim() || !socket || !isConnected) return;
 
-    // Détection des numéros de téléphone camerounais
+    // Vérification des numéros de téléphone
     const phoneRegex = /(\+237|237)?[6,2,9][0-9]{8}/g;
     const hasPhoneNumber = phoneRegex.test(newMessage);
     
@@ -81,19 +99,27 @@ export default function ChatWindow({
       receiverId: otherUser?._id
     };
 
+    console.log('📤 Envoi message:', messageData);
     socket.emit('send_message', messageData);
     setNewMessage('');
     inputRef.current?.focus();
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
+    <div className="flex flex-col h-screen bg-slate-900">
       {/* Header */}
       <div className="bg-green-600 p-4 sticky top-0 z-10">
-        <h3 className="text-white font-bold">{otherUser?.name || 'Chat'}</h3>
-        <p className="text-green-100 text-sm">
-          {otherUser?.city} - {otherUser?.district}
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-white font-bold">{otherUser?.name || 'Chat'}</h3>
+            <p className="text-green-100 text-sm">
+              {otherUser?.city} - {otherUser?.district}
+            </p>
+          </div>
+          <div className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}>
+            {isConnected ? 'Connecté' : 'Déconnecté'}
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
@@ -103,7 +129,7 @@ export default function ChatWindow({
           
           return (
             <div
-              key={index}
+              key={message._id || index}
               className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} message-enter`}
             >
               <div
@@ -149,15 +175,21 @@ export default function ChatWindow({
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             placeholder="Écrivez votre message..."
             className="flex-1 bg-slate-900 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            disabled={!isConnected}
           />
           <button
             onClick={sendMessage}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || !isConnected}
             className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg disabled:opacity-50 transition-colors"
           >
             <Send size={20} />
           </button>
         </div>
+        {!isConnected && (
+          <p className="text-red-400 text-xs text-center mt-2">
+            Reconnexion en cours...
+          </p>
+        )}
       </div>
     </div>
   );
