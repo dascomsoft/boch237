@@ -17,6 +17,12 @@ interface ChatWindowProps {
 const ChatWindow = ({ conversationId, currentUserId, otherUser, messages, onNewMessage }: ChatWindowProps) => {
   const [input, setInput] = useState('');
   const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll automatique
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
     // ✅ Utilisation de SOCKET_URL depuis la configuration
@@ -50,7 +56,7 @@ const ChatWindow = ({ conversationId, currentUserId, otherUser, messages, onNewM
     socket.on('new_message', (message: Message) => {
       console.log('📩 Message reçu:', message);
       
-      // Vérifier si le message n'existe pas déjà (éviter doublons)
+      // Vérifier si le message n'existe pas déjà
       const exists = messages.some(m => 
         m.content === message.content && 
         m.senderId === message.senderId &&
@@ -71,7 +77,7 @@ const ChatWindow = ({ conversationId, currentUserId, otherUser, messages, onNewM
     return () => {
       socket.disconnect();
     };
-  }, [conversationId, currentUserId]); // ✅ Ne pas mettre messages dans les dépendances
+  }, [conversationId, currentUserId]);
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current) return;
@@ -93,48 +99,59 @@ const ChatWindow = ({ conversationId, currentUserId, otherUser, messages, onNewM
   );
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 p-4">
+    <div className="flex flex-col h-full bg-slate-900">
       {/* Header */}
-      <div className="bg-green-600 p-3 rounded-lg mb-3">
-        <h3 className="text-white font-bold">{otherUser.name}</h3>
-        <p className="text-green-100 text-sm">{otherUser.city} - {otherUser.district}</p>
+      <div className="bg-green-600 p-4 sticky top-0 z-10">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-white font-bold">{otherUser.name}</h3>
+            <p className="text-green-100 text-sm">{otherUser.city} - {otherUser.district}</p>
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-2 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {sortedMessages.map((msg, idx) => (
           <div 
             key={msg._id || `msg-${msg.timestamp}-${idx}`}
-            className={`p-2 rounded max-w-[70%] ${
-              msg.senderId === currentUserId 
-                ? 'bg-green-600 text-white ml-auto' 
-                : 'bg-slate-800 text-gray-200'
-            }`}
+            className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
           >
-            <p className="break-words">{msg.content}</p>
-            <span className="text-xs opacity-70 block mt-1">
-              {new Date(msg.timestamp || Date.now()).toLocaleTimeString()}
-            </span>
+            <div 
+              className={`max-w-[70%] p-3 rounded-lg ${
+                msg.senderId === currentUserId 
+                  ? 'bg-green-600 text-white rounded-br-none' 
+                  : 'bg-slate-800 text-gray-200 rounded-bl-none'
+              }`}
+            >
+              <p className="break-words">{msg.content}</p>
+              <span className="text-xs opacity-70 block mt-1">
+                {new Date(msg.timestamp || Date.now()).toLocaleTimeString()}
+              </span>
+            </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          className="flex-1 p-2 rounded bg-slate-800 text-white border border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Écrivez votre message..."
-        />
-        <button 
-          onClick={handleSend} 
-          className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors"
-        >
-          Envoyer
-        </button>
+      <div className="bg-slate-800 p-4 border-t border-green-500">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            className="flex-1 p-3 rounded-lg bg-slate-900 text-white border border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Écrivez votre message..."
+          />
+          <button 
+            onClick={handleSend} 
+            className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors"
+          >
+            Envoyer
+          </button>
+        </div>
       </div>
     </div>
   );
