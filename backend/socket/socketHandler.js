@@ -1,3 +1,4 @@
+
 import Conversation from '../models/Conversation.js';
 
 export const setupSocket = (io) => {
@@ -17,12 +18,20 @@ export const setupSocket = (io) => {
     });
 
     socket.on('send_message', async (data) => {
-      console.log('📨 Message reçu:', data);
+      console.log('📨 1 - Message reçu:', data);
       const { conversationId, content, receiverId } = data;
+      
+      console.log('📨 2 - Recherche conversation:', conversationId);
       
       try {
         const conversation = await Conversation.findById(conversationId);
-        if (!conversation) return;
+        
+        if (!conversation) {
+          console.log('❌ 3 - Conversation NON trouvée dans MongoDB');
+          return;
+        }
+        
+        console.log('✅ 4 - Conversation trouvée');
         
         const newMessage = {
           senderId: socket.userId,
@@ -31,14 +40,18 @@ export const setupSocket = (io) => {
           isAlert: false
         };
         
+        console.log('📝 5 - Ajout du message à la conversation');
         conversation.messages.push(newMessage);
+        
+        console.log('💾 6 - Sauvegarde dans MongoDB...');
         await conversation.save();
         
-        console.log('✅ Message sauvegardé');
+        console.log('✅ 7 - Message sauvegardé avec succès !');
+        console.log('📤 8 - Envoi du message aux clients');
         io.to(`conv_${conversationId}`).emit('new_message', newMessage);
         
       } catch (error) {
-        console.error('❌ Erreur:', error);
+        console.error('❌ ERREUR:', error);
       }
     });
     
