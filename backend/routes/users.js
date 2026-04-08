@@ -67,28 +67,32 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 
 // Route admin - tous les utilisateurs
 router.get('/all', authMiddleware, async (req, res) => {
+  console.log('🟢🔴🟢 ROUTE /all APPELEE !!! 🔴🟢🔴');
+  console.log('📝 userId:', req.userId);
+  
   try {
-    console.log('1. Vérification admin...');
+    console.log('1. Recherche admin...');
     const admin = await User.findById(req.userId);
+    console.log('2. Admin trouvé:', admin ? admin.name : 'NON');
     
     if (!admin) {
-      console.log('Admin non trouvé');
+      console.log('❌ Admin non trouvé');
       return res.status(403).json({ message: 'Admin non trouvé' });
     }
     
     if (admin.role !== 'admin') {
-      console.log('Utilisateur non admin, rôle:', admin.role);
+      console.log('❌ Rôle:', admin.role);
       return res.status(403).json({ message: 'Non autorisé' });
     }
     
-    console.log('2. Récupération des utilisateurs...');
+    console.log('3. Récupération utilisateurs...');
     const users = await User.find({}).select('-password');
-    console.log(`3. ${users.length} utilisateurs trouvés`);
+    console.log(`✅ ${users.length} utilisateurs`);
     
     res.json(users);
   } catch (error) {
-    console.error('Erreur détaillée:', error);
-    res.status(500).json({ message: 'Erreur serveur', details: error.message });
+    console.error('❌ ERREUR:', error);
+    res.status(500).json({ message: 'Erreur', details: error.message });
   }
 });
 
