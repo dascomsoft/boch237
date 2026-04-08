@@ -1,6 +1,4 @@
 
-
-
 import express from 'express';
 import mongoose from 'mongoose';
 import { createServer } from 'http';
@@ -15,15 +13,23 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configuration CORS pour Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
-    credentials: true
-  }
+    origin: ["https://boch237.vercel.app", "http://localhost:3000"],
+    credentials: true,
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
-// Middleware
-app.use(cors());
+// Middleware CORS pour Express
+app.use(cors({
+  origin: ["https://boch237.vercel.app", "http://localhost:3000"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -36,9 +42,20 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API fonctionne !' });
 });
 
-// Socket.IO (à implémenter plus tard)
+// Socket.IO
 io.on('connection', (socket) => {
   console.log('🟢 Nouvelle connexion socket:', socket.id);
+  
+  socket.on('join_conversation', (conversationId) => {
+    socket.join(`conv_${conversationId}`);
+    console.log(`📌 Socket ${socket.id} joined conversation ${conversationId}`);
+  });
+  
+  socket.on('send_message', async (data) => {
+    console.log('📨 Message reçu:', data);
+    // ... le reste du code
+  });
+  
   socket.on('disconnect', () => {
     console.log('🔴 Socket déconnecté:', socket.id);
   });
@@ -46,7 +63,6 @@ io.on('connection', (socket) => {
 
 // Connexion MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/boch237';
-
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ MongoDB error:', err));
