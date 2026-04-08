@@ -1,36 +1,28 @@
 
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { Send, AlertCircle } from 'lucide-react';
+
+import { useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { Message, User } from '@/types';
-import io, { Socket } from 'socket.io-client';
 import { SOCKET_URL } from '@/lib/api';
 
 interface ChatWindowProps {
   conversationId: string;
   currentUserId: string;
-  otherUser?: User;
+  otherUser: User;
   messages: Message[];
   onNewMessage: (message: Message) => void;
 }
 
-export default function ChatWindow({ 
-  conversationId, 
-  currentUserId, 
-  otherUser, 
-  messages, 
-  onNewMessage 
-}: ChatWindowProps) {
-  const [newMessage, setNewMessage] = useState('');
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [showAlert, setShowAlert] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+const ChatWindow = ({ conversationId, currentUserId, otherUser, messages, onNewMessage }: ChatWindowProps) => {
+  const [input, setInput] = useState('');
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Connexion Socket.IO
-    const newSocket = io(SOCKET_URL, {
+    // ✅ Utilisation de SOCKET_URL depuis la configuration
+    console.log('🔌 Connexion Socket à:', SOCKET_URL);
+    
+    const socket = io(SOCKET_URL, {
       auth: { userId: currentUserId },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -38,159 +30,114 @@ export default function ChatWindow({
       reconnectionDelay: 1000
     });
 
-    newSocket.on('connect', () => {
-      console.log('✅ Socket connecté à', SOCKET_URL);
-      setIsConnected(true);
-      // Rejoindre la conversation après reconnexion
-      newSocket.emit('join_conversation', conversationId);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('✅ Socket connecté:', socket.id);
+      // ✅ RECONNEXION : rejoindre à nouveau la conversation
+      socket.emit('join_conversation', conversationId);
     });
 
-    newSocket.on('disconnect', () => {
+    socket.on('disconnect', () => {
       console.log('🔴 Socket déconnecté');
-      setIsConnected(false);
     });
 
-    // ✅ Écouter le BON événement (new_message - exactement comme backend)
-    newSocket.on('new_message', (message: Message) => {
-      console.log('📩 Message reçu via socket:', message);
-      onNewMessage(message);
+    // ✅ Rejoint la conversation
+    socket.emit('join_conversation', conversationId);
+    console.log('📌 Joined conversation:', conversationId);
+
+    // ✅ Réception des nouveaux messages avec filtrage des doublons
+    socket.on('new_message', (message: Message) => {
+      console.log('📩 Message reçu:', message);
+      
+      // Vérifier si le message n'existe pas déjà (éviter doublons)
+      const exists = messages.some(m => 
+        m.content === message.content && 
+        m.senderId === message.senderId &&
+        Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 1000
+      );
+      
+      if (!exists) {
+        onNewMessage(message);
+      } else {
+        console.log('⚠️ Message ignoré (doublon)');
+      }
     });
 
-    setSocket(newSocket);
+    socket.on('phone_alert', (alert: any) => {
+      console.log('🚨 Alerte admin:', alert);
+    });
 
     return () => {
-      newSocket.disconnect();
+      socket.disconnect();
     };
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId]); // ✅ Ne pas mettre messages dans les dépendances
 
-  // Rejoindre la conversation quand le socket est connecté
-  useEffect(() => {
-    if (socket && isConnected && conversationId) {
-      socket.emit('join_conversation', conversationId);
-      console.log('📌 Joined conversation:', conversationId);
-    }
-  }, [socket, isConnected, conversationId]);
+  const handleSend = () => {
+    if (!input.trim() || !socketRef.current) return;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const sendMessage = () => {
-    if (!newMessage.trim() || !socket || !isConnected) return;
-
-    // Vérification des numéros de téléphone
-    const phoneRegex = /(\+237|237)?[6,2,9][0-9]{8}/g;
-    const hasPhoneNumber = phoneRegex.test(newMessage);
-    
-    if (hasPhoneNumber) {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-      alert("⚠️ Le partage de numéro de téléphone est interdit pour votre sécurité. Utilisez le chat pour communiquer.");
-      return;
-    }
-
-    const messageData = {
+    const msg = {
       conversationId,
-      content: newMessage,
-      receiverId: otherUser?._id
+      content: input,
+      receiverId: otherUser._id
     };
 
-    console.log('📤 Envoi message:', messageData);
-    socket.emit('send_message', messageData);
-    setNewMessage('');
-    inputRef.current?.focus();
+    socketRef.current.emit('send_message', msg);
+    console.log('📤 Envoi message:', msg);
+    setInput('');
   };
+
+  // ✅ Tri des messages par date
+  const sortedMessages = [...messages].sort(
+    (a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime()
+  );
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900">
+    <div className="flex flex-col h-full bg-slate-900 p-4">
       {/* Header */}
-      <div className="bg-green-600 p-4 sticky top-0 z-10">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-white font-bold">{otherUser?.name || 'Chat'}</h3>
-            <p className="text-green-100 text-sm">
-              {otherUser?.city} - {otherUser?.district}
-            </p>
-          </div>
-          <div className={`text-xs px-2 py-1 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}>
-            {isConnected ? 'Connecté' : 'Déconnecté'}
-          </div>
-        </div>
+      <div className="bg-green-600 p-3 rounded-lg mb-3">
+        <h3 className="text-white font-bold">{otherUser.name}</h3>
+        <p className="text-green-100 text-sm">{otherUser.city} - {otherUser.district}</p>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((message, index) => {
-          const isCurrentUser = message.senderId === currentUserId;
-          
-          return (
-            <div
-              key={message._id || index}
-              className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} message-enter`}
-            >
-              <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  isCurrentUser
-                    ? 'bg-green-600 text-white rounded-br-none'
-                    : 'bg-slate-800 text-gray-200 rounded-bl-none'
-                }`}
-              >
-                {message.isAlert && (
-                  <div className="flex items-center gap-1 text-yellow-400 text-xs mb-1">
-                    <AlertCircle size={12} /> Message signalé
-                  </div>
-                )}
-                <p className="break-words">{message.content}</p>
-                <span className="text-xs opacity-70 mt-1 block">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+      <div className="flex-1 overflow-y-auto mb-2 space-y-2">
+        {sortedMessages.map((msg, idx) => (
+          <div 
+            key={msg._id || `msg-${msg.timestamp}-${idx}`}
+            className={`p-2 rounded max-w-[70%] ${
+              msg.senderId === currentUserId 
+                ? 'bg-green-600 text-white ml-auto' 
+                : 'bg-slate-800 text-gray-200'
+            }`}
+          >
+            <p className="break-words">{msg.content}</p>
+            <span className="text-xs opacity-70 block mt-1">
+              {new Date(msg.timestamp || Date.now()).toLocaleTimeString()}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* Input */}
-      <div className="bg-slate-800 p-4 border-t border-green-500">
-        {showAlert && (
-          <div className="bg-red-600/20 border border-red-500 rounded-lg p-2 mb-2">
-            <p className="text-red-400 text-xs flex items-center gap-1">
-              <AlertCircle size={14} /> 
-              ⚠️ Les numéros de téléphone sont automatiquement bloqués
-            </p>
-          </div>
-        )}
-        
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Écrivez votre message..."
-            className="flex-1 bg-slate-900 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            disabled={!isConnected}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || !isConnected}
-            className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg disabled:opacity-50 transition-colors"
-          >
-            <Send size={20} />
-          </button>
-        </div>
-        {!isConnected && (
-          <p className="text-red-400 text-xs text-center mt-2">
-            Reconnexion en cours...
-          </p>
-        )}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="flex-1 p-2 rounded bg-slate-800 text-white border border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Écrivez votre message..."
+        />
+        <button 
+          onClick={handleSend} 
+          className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors"
+        >
+          Envoyer
+        </button>
       </div>
     </div>
   );
-}
+};
+
+export default ChatWindow;
