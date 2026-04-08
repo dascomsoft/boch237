@@ -1,4 +1,3 @@
-
 import Conversation from '../models/Conversation.js';
 
 export const setupSocket = (io) => {
@@ -24,20 +23,19 @@ export const setupSocket = (io) => {
       
       console.log(`💬 Message de ${socket.userId} à ${receiverId}: ${content}`);
       
-      // Détection des numéros de téléphone
       const phoneRegex = /(\+237|237)?[6,2,9][0-9]{8}/g;
       const hasPhoneNumber = phoneRegex.test(content);
       
       try {
-        console.log('🔍 Recherche conversation:', conversationId);
+        console.log('🔍 1 - Recherche conversation:', conversationId);
         const conversation = await Conversation.findById(conversationId);
         
         if (!conversation) {
-          console.error('❌ Conversation non trouvée:', conversationId);
+          console.error('❌ 2 - Conversation non trouvée');
           return;
         }
         
-        console.log('✅ Conversation trouvée, participants:', conversation.participants);
+        console.log('✅ 3 - Conversation trouvée, participants:', conversation.participants);
         
         const newMessage = {
           senderId: socket.userId,
@@ -46,30 +44,28 @@ export const setupSocket = (io) => {
           isAlert: hasPhoneNumber
         };
         
-        console.log('📝 Ajout du message:', newMessage);
-        
+        console.log('📝 4 - Ajout du message');
         conversation.messages.push(newMessage);
         conversation.lastActivity = new Date();
+        
+        console.log('💾 5 - Sauvegarde en cours...');
         await conversation.save();
         
-        console.log(`✅ Message sauvegardé dans conversation ${conversationId}`);
+        console.log(`✅ 6 - Message sauvegardé dans ${conversationId}`);
         
-        // Envoyer aux participants
+        console.log(`📤 7 - Envoi à la room conv_${conversationId}`);
         io.to(`conv_${conversationId}`).emit('new_message', newMessage);
-        console.log(`📤 Message envoyé à la room conv_${conversationId}`);
         
         if (hasPhoneNumber) {
           io.to('admin_room').emit('phone_alert', {
             conversationId,
             message: content,
-            users: conversation.participants,
-            timestamp: new Date()
+            users: conversation.participants
           });
-          console.log('🚨 Alerte admin envoyée');
+          console.log('🚨 8 - Alerte admin envoyée');
         }
       } catch (error) {
-        console.error('❌ Erreur dans send_message:', error);
-        console.error('❌ Stack:', error.stack);
+        console.error('❌ Erreur:', error);
       }
     });
     
