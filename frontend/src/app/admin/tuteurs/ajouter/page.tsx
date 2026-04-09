@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 export default function AdminAjouterTuteur() {
   const router = useRouter();
@@ -23,10 +24,16 @@ export default function AdminAjouterTuteur() {
     setLoading(true);
     setResult(null);
     
+    if (!form.phone || !form.name) {
+      alert('Le téléphone et le nom sont requis');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5001/api/annonces/admin/add-tutor',
+        `${API_URL}/annonces/admin/add-tutor`,
         form,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -36,7 +43,9 @@ export default function AdminAjouterTuteur() {
         phone: '', name: '', province: '', city: '',
         district: '', subjects: '', classes: ''
       });
+      alert('✅ Répétiteur ajouté avec succès !');
     } catch (error: any) {
+      console.error('Erreur:', error);
       alert(error.response?.data?.message || '❌ Erreur lors de l\'ajout');
     } finally {
       setLoading(false);
@@ -46,9 +55,13 @@ export default function AdminAjouterTuteur() {
   return (
     <div className="min-h-screen bg-slate-900 p-4">
       <div className="bg-green-600 p-4 rounded-lg mb-4">
+        <button onClick={() => router.back()} className="text-white mb-2">
+          ← Retour
+        </button>
         <h1 className="text-white text-xl font-bold text-center">
           Ajouter un répétiteur (Admin)
         </h1>
+        <p className="text-green-100 text-sm text-center">Ajouter manuellement un répétiteur</p>
       </div>
 
       {result && (
@@ -93,6 +106,9 @@ export default function AdminAjouterTuteur() {
             <option value="">Province</option>
             <option>Centre</option><option>Littoral</option>
             <option>Ouest</option><option>Nord</option>
+            <option>Extrême-Nord</option><option>Sud</option>
+            <option>Sud-Ouest</option><option>Nord-Ouest</option>
+            <option>Est</option><option>Adamaoua</option>
           </select>
           
           <input
