@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { User, Edit, Trash2, Eye, RefreshCw, UserPlus } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 interface Tutor {
   _id: string;
@@ -29,7 +30,7 @@ export default function AdminTuteurs() {
   const fetchTutors = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5001/api/users/tutors', {
+      const response = await axios.get(`${API_URL}/users/tutors`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTutors(response.data);
@@ -45,7 +46,7 @@ export default function AdminTuteurs() {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `http://localhost:5001/api/users/${id}/status`,
+        `${API_URL}/users/${id}/status`,
         { isActive: !currentStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
