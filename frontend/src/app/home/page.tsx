@@ -26,7 +26,7 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     
-    // 🔥 Redirection vers login si pas de token
+    //Redirection vers login si pas de token
     if (!token) {
       router.push('/login');
       return;

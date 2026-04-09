@@ -1,5 +1,6 @@
+
 'use client';
-import { Search, MessageCircle, User, LayoutDashboard } from 'lucide-react';
+import { Search, MessageCircle, User, LayoutDashboard, Home } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 interface NavItem {
@@ -14,7 +15,7 @@ export default function MobileNav({ userRole }: { userRole?: string }) {
   const router = useRouter();
 
   const navItems: NavItem[] = [
-    { icon: Search, label: 'Recherche', path: '/', roles: ['parent', 'tutor'] },
+    { icon: Home, label: 'Accueil', path: '/home', roles: ['parent', 'tutor'] },
     { icon: MessageCircle, label: 'Messages', path: '/chat', roles: ['parent', 'tutor', 'admin'] },
     { icon: User, label: 'Profil', path: '/profile', roles: ['parent', 'tutor'] },
     { icon: LayoutDashboard, label: 'Admin', path: '/admin', roles: ['admin'] },
@@ -31,7 +32,7 @@ export default function MobileNav({ userRole }: { userRole?: string }) {
       <div className="flex justify-around p-3">
         {filteredItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.path;
+          const isActive = pathname === item.path || (item.path === '/home' && pathname === '/');
           
           return (
             <button
