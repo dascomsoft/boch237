@@ -1,23 +1,25 @@
-
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Nunito } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const nunito = Nunito({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-nunito',
+});
 
 export const metadata: Metadata = {
   title: 'Boch237 | Trouvez votre répétiteur au Cameroun',
-  description: 'Boch237 est la plateforme n°1 au Cameroun pour trouver un répétiteur qualifié. Parents, élèves et enseignants, connectez-vous facilement pour des cours à domicile dans toutes les villes et provinces du Cameroun.',
-  keywords: 'répétiteur Cameroun, cours à domicile, professeur particulier, soutien scolaire, enseignant, parent, élève, Yaoundé, Douala, Bafoussam, Garoua, Maroua, Ngaoundéré, Bamenda, Buea, Ebolowa, Bertoua',
-  authors: [{ name: 'Boch237 Team' }],
-  creator: 'Boch237',
-  publisher: 'Boch237',
-  robots: 'index, follow',
+  description: 'Boch237 est la plateforme n°1 au Cameroun pour trouver un répétiteur qualifié...',
+  
   openGraph: {
     title: 'Boch237 - Plateforme de mise en relation parents/répétiteurs au Cameroun',
-    description: 'Trouvez facilement un répétiteur qualifié près de chez vous au Cameroun. Plus de 1000 répétiteurs disponibles dans toutes les villes et provinces.',
+    description: 'Trouvez facilement un répétiteur qualifié près de chez vous au Cameroun.',
     url: 'https://boch237.com',
     siteName: 'Boch237',
+
+    // ❌ favicon.ico mauvais choix ici
+    // ✅ utilise une vraie image
     images: [
       {
         url: '/bochlogo.png',
@@ -29,22 +31,28 @@ export const metadata: Metadata = {
     locale: 'fr_FR',
     type: 'website',
   },
+
   twitter: {
     card: 'summary_large_image',
     title: 'Boch237 - Trouvez votre répétiteur au Cameroun',
-    description: 'La plateforme qui connecte parents, élèves et enseignants pour des cours à domicile au Cameroun.',
+    description: 'La plateforme qui connecte parents...',
+    
+    // ❌ pareil ici
     images: ['/bochlogo.png'],
   },
+
+  // ✅ CORRECTION ICI
   icons: {
-    icon: '/bochlogo.png',
-    shortcut: '/bochlogo.png',
-    apple: '/bochlogo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+    ],
+    shortcut: ['/favicon.ico'],
+    apple: [
+      { url: '/bochlogo.png', sizes: '180x180' }, // mieux en PNG
+    ],
   },
+
   manifest: '/manifest.json',
-  verification: {
-    google: 'votre-code-google-verification',
-  },
-  category: 'education',
 };
 
 export default function RootLayout({
@@ -59,8 +67,12 @@ export default function RootLayout({
         <meta name="geo.region" content="CM" />
         <meta name="geo.placename" content="Cameroun" />
         <meta name="language" content="French" />
+
+        {/* ✅ GARDE JUSTE ÇA (simple et efficace) */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className={inter.className}>
+
+      <body className={`${nunito.variable} font-sans`}>
         <div className="max-w-md mx-auto bg-slate-900 min-h-screen shadow-xl">
           {children}
         </div>
