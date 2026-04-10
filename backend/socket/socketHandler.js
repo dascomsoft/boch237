@@ -121,7 +121,6 @@
 
 
 
-
 import Conversation from '../models/Conversation.js';
 import mongoose from 'mongoose';
 
@@ -147,7 +146,7 @@ export const setupSocket = (io) => {
 
     socket.on('send_message', async (data) => {
       console.log('📨 1 - Message reçu:', data);
-      const { conversationId, content, receiverId } = data; // Ajout receiverId
+      const { conversationId, content, receiverId } = data;
 
       try {
         // 🔥 Vérifier si l'ID est valide
@@ -183,9 +182,11 @@ export const setupSocket = (io) => {
         await conversation.save();
 
         console.log('✅ 8 - Message sauvegardé !');
+        
+        // 🔥 CORRECTION : Envoyer à TOUS dans la conversation (y compris l'expéditeur)
         io.to(`conv_${conversationId}`).emit('new_message', newMessage);
-
-        // 🔔 AJOUT : NOTIFICATION POUR LE DESTINATAIRE
+        
+        // 🔔 NOTIFICATION POUR LE DESTINATAIRE (seulement pour le badge)
         if (receiverId) {
           io.to(`user_${receiverId}`).emit('new_message_notification', {
             conversationId,
@@ -206,4 +207,3 @@ export const setupSocket = (io) => {
     });
   });
 };
-

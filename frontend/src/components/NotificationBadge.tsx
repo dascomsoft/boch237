@@ -1,14 +1,15 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { Bell, MessageCircle, X } from 'lucide-react';
-import { API_URL, SOCKET_URL } from '@/lib/api';
-import io from 'socket.io-client';
+import { Bell, MessageCircle } from 'lucide-react';
+import { SOCKET_URL, API_URL } from '@/lib/api';
+import io, { Socket } from 'socket.io-client';
 
 interface Notification {
   id: string;
-  type: 'message' | 'annonce';
+  type: 'message';
   title: string;
   content: string;
   conversationId?: string;
@@ -21,23 +22,30 @@ export default function NotificationBadge() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [socket, setSocket] = useState<any>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    fetchUnreadCount();
     fetchUser();
 
     // Décoder le token pour obtenir userId
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    const { userId } = JSON.parse(jsonPayload);
+    let userId = null;
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      userId = JSON.parse(jsonPayload).userId;
+    } catch (error) {
+      console.error('Erreur décodage token:', error);
+      return;
+    }
+
+    if (!userId) return;
 
     const newSocket = io(SOCKET_URL, {
       auth: { userId },
@@ -45,9 +53,8 @@ export default function NotificationBadge() {
     });
 
     newSocket.on('new_message_notification', (data: any) => {
-      console.log('🔔 Nouvelle notification:', data);
+      console.log('🔔 Nouveau message reçu:', data);
       setUnreadCount(prev => prev + 1);
-      
       setNotifications(prev => [{
         id: Date.now().toString(),
         type: 'message',
@@ -57,7 +64,7 @@ export default function NotificationBadge() {
         read: false,
         timestamp: new Date()
       }, ...prev]);
-      
+
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Nouveau message', {
           body: data.content,
@@ -68,12 +75,17 @@ export default function NotificationBadge() {
 
     setSocket(newSocket);
 
-    return () => newSocket.close();
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
   }, []);
 
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('token');
+      // ✅ Utiliser API_URL au lieu de process.env
       const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -83,20 +95,8 @@ export default function NotificationBadge() {
     }
   };
 
-  const fetchUnreadCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/users/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUnreadCount(response.data.unreadCount);
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
   const handleNotificationClick = (notification: Notification) => {
-    if (notification.type === 'message' && notification.conversationId) {
+    if (notification.conversationId) {
       router.push(`/chat?convId=${notification.conversationId}`);
     }
     setShowDropdown(false);
