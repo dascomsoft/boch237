@@ -269,9 +269,6 @@
 
 
 
-
-
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -335,11 +332,6 @@ export default function NotificationBadge() {
       console.log('📢 NotificationBadge - Socket DÉCONNECTÉ');
     });
 
-    // 🔥 ÉCOUTE TOUS LES ÉVÉNEMENTS POUR DEBUG
-    newSocket.onAny((event, ...args) => {
-      console.log('📡 [NotificationBadge] Événement reçu:', event, args);
-    });
-
     newSocket.on('new_message_notification', (data: any) => {
       console.log('🔔🔔🔔 NOTIFICATION REÇUE DANS LE BADGE 🔔🔔🔔', data);
       setUnreadCount(prev => prev + 1);
@@ -393,20 +385,6 @@ export default function NotificationBadge() {
     setUnreadCount(0);
   };
 
-  // 🔥 BOUTON DE TEST
-  const addTestNotification = () => {
-    console.log('🔧 Ajout d\'une notification de test');
-    setUnreadCount(prev => prev + 1);
-    setNotifications(prev => [{
-      id: Date.now().toString(),
-      type: 'message',
-      title: 'Test',
-      content: 'Ceci est une notification de test',
-      read: false,
-      timestamp: new Date()
-    }, ...prev]);
-  };
-
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -417,14 +395,6 @@ export default function NotificationBadge() {
 
   return (
     <div className="relative">
-      {/* 🔥 BOUTON DE TEST TEMPORAIRE */}
-      <button
-        onClick={addTestNotification}
-        className="absolute -left-16 top-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs px-2 py-1 rounded"
-      >
-        Test
-      </button>
-
       <button
         onClick={() => {
           setShowDropdown(!showDropdown);
