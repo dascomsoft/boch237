@@ -336,6 +336,11 @@ export default function NotificationBadge() {
       console.log('📢 NotificationBadge - Socket DÉCONNECTÉ');
     });
 
+    // 🔥 ÉCOUTE TOUS LES ÉVÉNEMENTS POUR DEBUG
+    newSocket.onAny((event, ...args) => {
+      console.log('📡 [NotificationBadge] Événement reçu:', event, args);
+    });
+
     newSocket.on('new_message_notification', (data: any) => {
       console.log('🔔🔔🔔 NOTIFICATION REÇUE DANS LE BADGE 🔔🔔🔔', data);
       setUnreadCount(prev => prev + 1);
