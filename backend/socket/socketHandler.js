@@ -235,8 +235,6 @@
 
 
 
-
-
 import Conversation from '../models/Conversation.js';
 import mongoose from 'mongoose';
 
@@ -250,10 +248,9 @@ export const setupSocket = (io) => {
 
   io.on('connection', async (socket) => {
     console.log('🟢 User connected:', socket.userId);
-
-    // 🔥 DIAGNOSTIC : Compter les conversations
-    const totalConversations = await Conversation.countDocuments();
-    console.log('📊 TOTAL CONVERSATIONS EN DB:', totalConversations);
+    
+    // 🔥 CRUCIAL : Rejoindre sa room personnelle pour les notifications
+    socket.join(`user_${socket.userId}`);
 
     socket.on('join_conversation', (conversationId) => {
       socket.join(`conv_${conversationId}`);
@@ -261,30 +258,20 @@ export const setupSocket = (io) => {
     });
 
     socket.on('send_message', async (data) => {
-      console.log('📨 1 - Message reçu:', data);
+      console.log('📨 Message reçu:', data);
       const { conversationId, content, receiverId } = data;
 
-      // 🔍 DEBUG : Afficher receiverId
-      console.log(`🔍 DEBUG - receiverId: ${receiverId}, senderId: ${socket.userId}`);
-
       try {
-        // 🔥 Vérifier si l'ID est valide
         if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-          console.log('❌ ID INVALIDE:', conversationId);
+          console.log('❌ ID INVALIDE');
           return;
         }
 
-        console.log('🔍 2 - Recherche conversation:', conversationId);
         const conversation = await Conversation.findById(conversationId);
-        
-        console.log('🔍 3 - RÉSULTAT:', conversation ? `TROUVÉE (${conversation.messages.length} messages)` : 'NULL');
-
         if (!conversation) {
-          console.log('❌ 4 - Conversation NON trouvée dans MongoDB');
+          console.log('❌ Conversation non trouvée');
           return;
         }
-
-        console.log('✅ 5 - Conversation trouvée');
 
         const newMessage = {
           senderId: socket.userId,
@@ -293,19 +280,14 @@ export const setupSocket = (io) => {
           isAlert: false
         };
 
-        console.log('📝 6 - Ajout message');
         conversation.messages.push(newMessage);
         conversation.lastActivity = new Date();
-
-        console.log('💾 7 - Sauvegarde...');
         await conversation.save();
 
-        console.log('✅ 8 - Message sauvegardé !');
+        console.log('✅ Message sauvegardé');
         
-        // Envoyer le message à TOUS dans la conversation (y compris l'expéditeur)
         io.to(`conv_${conversationId}`).emit('new_message', newMessage);
-        
-        // 🔔 NOTIFICATION POUR LE DESTINATAIRE (seulement pour le badge)
+
         if (receiverId && receiverId !== socket.userId) {
           io.to(`user_${receiverId}`).emit('new_message_notification', {
             conversationId,
@@ -313,13 +295,11 @@ export const setupSocket = (io) => {
             content: content.substring(0, 50),
             timestamp: new Date()
           });
-          console.log(`🔔 NOTIFICATION envoyée à l'utilisateur ${receiverId}`);
-        } else {
-          console.log(`⚠️ NOTIFICATION NON envoyée - receiverId: ${receiverId}, senderId: ${socket.userId}`);
+          console.log(`🔔 Notification envoyée à l'utilisateur ${receiverId}`);
         }
 
       } catch (error) {
-        console.error('❌ ERREUR:', error);
+        console.error('❌ Erreur:', error);
       }
     });
 
