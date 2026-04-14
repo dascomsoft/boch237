@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ChatWindow from '@/components/ChatWindow';
 import MobileNav from '@/components/MobileNav';
-import NotificationBadge from '@/components/NotificationBadge';
 import { Conversation, Message, User } from '@/types';
 import { API_URL } from '@/lib/api';
 
@@ -87,9 +86,6 @@ function ChatContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
-      <div className="sticky top-0 z-20 bg-green-600 p-2 flex justify-end">
-        <NotificationBadge />
-      </div>
       {currentConversation && currentUser && otherUser ? (
         <ChatWindow
           conversationId={currentConversation._id}
