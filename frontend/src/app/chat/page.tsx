@@ -1,4 +1,7 @@
 
+
+
+
 'use client';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -17,6 +20,7 @@ function ChatContent() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [otherUser, setOtherUser] = useState<User | null>(null);
+  const [otherUsers, setOtherUsers] = useState<Record<string, User>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,20 +47,29 @@ function ChatContent() {
       const conversationsData = convResponse.data;
       setConversations(conversationsData);
       
+      const usersMap: Record<string, User> = {};
+      for (const conv of conversationsData) {
+        const otherId = conv.participants.find((id: string) => id !== currentUserData._id);
+        if (otherId && !usersMap[otherId]) {
+          try {
+            const otherRes = await axios.get(`${API_URL}/users/${otherId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            usersMap[otherId] = otherRes.data;
+          } catch (err) {
+            console.error('Erreur chargement utilisateur:', err);
+          }
+        }
+      }
+      setOtherUsers(usersMap);
+      
       if (conversationId) {
         const conv = conversationsData.find((c: Conversation) => c._id === conversationId);
         if (conv) {
           setCurrentConversation(conv);
           const otherId = conv.participants.find((id: string) => id !== currentUserData._id);
-          if (otherId) {
-            try {
-              const otherUserResponse = await axios.get(`${API_URL}/users/${otherId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              setOtherUser(otherUserResponse.data);
-            } catch (err) {
-              console.error('Erreur chargement autre utilisateur:', err);
-            }
+          if (otherId && usersMap[otherId]) {
+            setOtherUser(usersMap[otherId]);
           }
         }
       }
@@ -104,16 +117,50 @@ function ChatContent() {
             </div>
           ) : (
             <div className="space-y-2">
-              {conversations.map((conv) => (
-                <div
-                  key={conv._id}
-                  className="bg-slate-800 p-3 rounded-lg cursor-pointer hover:bg-slate-700"
-                  onClick={() => window.location.href = `/chat?convId=${conv._id}`}
-                >
-                  <p className="text-white">Conversation du {new Date(conv.lastActivity).toLocaleDateString()}</p>
-                  <p className="text-gray-400 text-sm">{conv.messages.length} message(s)</p>
-                </div>
-              ))}
+              {conversations.map((conv) => {
+                const otherId = conv.participants.find(id => id !== currentUser?._id);
+                const other = otherId ? otherUsers[otherId] : null;
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                
+                return (
+                  <div
+                    key={conv._id}
+                    className="bg-slate-800 p-4 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors border border-slate-700"
+                    onClick={() => window.location.href = `/chat?convId=${conv._id}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
+                            <span className="text-white font-bold">
+                              {other?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-white font-bold">
+                              {other?.name || 'Utilisateur'}
+                            </h3>
+                            <p className="text-gray-400 text-xs">
+                              {other?.role === 'tutor' ? '👨‍🏫 Répétiteur' : '👨‍👩‍👧 Parent'}
+                            </p>
+                          </div>
+                        </div>
+                        {lastMessage && (
+                          <p className="text-gray-500 text-sm mt-2 truncate ml-12">
+                            {lastMessage.senderId === currentUser?._id ? '👤 Vous: ' : ''}
+                            {lastMessage.content}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-gray-500 text-xs">
+                          {new Date(conv.lastActivity).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -241,10 +241,10 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
       {/* Header */}
-      <div className="bg-green-600 p-6 text-center">
-        <div className="inline-block p-3 bg-white rounded-full mb-3">
-          <UserCircle size={48} className="text-green-600" />
-        </div>
+      <div className="bg-green-600 p-4 space-y-4 pt-15 sticky top-0 left-0 w-full shadow-md">
+        {/* <div className="inline-block p-3 bg-white rounded-full mb-3">
+          <UserCircle size={8} className="text-green-600" />
+        </div> */}
         <h1 className="text-white text-xl font-bold">{user?.name}</h1>
         <p className="text-green-100">
           {user?.role === 'tutor' ? '👨‍🏫 Répétiteur' : '👨‍👩‍👧 Parent/Élève'}
@@ -276,7 +276,7 @@ export default function ProfilePage() {
         )}
 
         {/* Localisation */}
-        <div className="bg-slate-800 rounded-xl p-4">
+        <div className="bg-slate-800 rounded-xl p-2">
           <h2 className="text-green-400 font-bold mb-3 flex items-center gap-2">
             <MapPin size={18} /> Localisation
           </h2>
