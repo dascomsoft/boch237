@@ -87,18 +87,21 @@ export default function TutorProfilePage() {
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
       {/* Header */}
-      <div className="bg-green-600 p-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-white">
-            <ArrowLeft size={24} />
-          </button>
-          <h1 className="text-white text-xl font-bold">Profil du répétiteur</h1>
-        </div>
-      </div>
+{/* Header */}
+<div className="bg-green-600 p-4 space-y-4 pt-15 fixed top-0 left-0 w-full shadow-md">
+  <div className="flex items-center gap-3">
+    <button onClick={() => router.back()} className="text-white">
+      <ArrowLeft size={24} />
+    </button>
+    <h1 className="text-white text-xl font-bold truncate">
+      Profil du répétiteur
+    </h1>
+  </div>
+</div>
 
       <div className="p-4 space-y-4">
         {/* Photo et nom */}
-        <div className="bg-slate-800 rounded-xl p-6 text-center">
+        <div className="bg-slate-800 rounded-xl p-6 pt-30 text-center">
           <div className="inline-block p-3 bg-white rounded-full mb-3">
             <UserCircle size={64} className="text-green-600" />
           </div>
