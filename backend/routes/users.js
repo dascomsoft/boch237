@@ -1,5 +1,4 @@
 
-
 import express from 'express';
 import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
@@ -60,7 +59,115 @@ router.post('/conversation', authMiddleware, async (req, res) => {
   }
 });
 
-// ROUTES ADMIN (spécifiques)
+// ========== ROUTES DE GESTION DES MESSAGES (AVANT la route dynamique) ==========
+
+// 🗑️ SUPPRIMER UN MESSAGE
+router.delete('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+
+    console.log(`🗑️ Tentative de suppression du message ${messageId}`);
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    }
+
+    if (!conversation.participants.includes(req.userId)) {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const messageIndex = conversation.messages.findIndex(
+      msg => msg._id.toString() === messageId
+    );
+
+    if (messageIndex === -1) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    const message = conversation.messages[messageIndex];
+
+    if (message.senderId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Vous ne pouvez supprimer que vos propres messages' });
+    }
+
+    conversation.messages.splice(messageIndex, 1);
+    await conversation.save();
+
+    console.log(`✅ Message ${messageId} supprimé avec succès`);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversationId}`).emit('message_deleted', {
+        messageId,
+        conversationId,
+        deletedBy: req.userId
+      });
+    }
+
+    res.json({ message: 'Message supprimé avec succès' });
+  } catch (error) {
+    console.error('❌ Erreur suppression message:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ✏️ MODIFIER UN MESSAGE
+router.put('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { content } = req.body;
+
+    console.log(`✏️ Tentative de modification du message ${messageId}`);
+
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: 'Le contenu est requis' });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    }
+
+    if (!conversation.participants.includes(req.userId)) {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const message = conversation.messages.find(msg => msg._id.toString() === messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    if (message.senderId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages' });
+    }
+
+    message.content = content;
+    message.edited = true;
+    message.editedAt = new Date();
+    await conversation.save();
+
+    console.log(`✅ Message ${messageId} modifié avec succès`);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversationId}`).emit('message_edited', {
+        messageId,
+        conversationId,
+        content,
+        editedAt: new Date()
+      });
+    }
+
+    res.json({ message: 'Message modifié avec succès' });
+  } catch (error) {
+    console.error('❌ Erreur modification message:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ========== ROUTES ADMIN (spécifiques) ==========
+
 router.get('/all', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 Vérification admin...');
@@ -107,7 +214,6 @@ router.patch('/:userId/status', authMiddleware, async (req, res) => {
 
 // ========== ROUTES DE MODIFICATION DE PROFIL ==========
 
-// 🔧 MODIFIER SON PROPRE PROFIL
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
     const { name, province, city, district, subjects, classes } = req.body;
@@ -137,7 +243,6 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
-// 🔧 CHANGER LE MOT DE PASSE
 router.put('/change-password', authMiddleware, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -155,13 +260,11 @@ router.put('/change-password', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
-    // Vérifier l'ancien mot de passe
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
       return res.status(401).json({ message: 'Mot de passe actuel incorrect' });
     }
 
-    // Hasher le nouveau mot de passe
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
@@ -173,7 +276,6 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
-// 🔧 MODIFIER PHOTO DE PROFIL
 router.put('/photo', authMiddleware, async (req, res) => {
   try {
     const { photo } = req.body;
@@ -199,23 +301,7 @@ router.put('/photo', authMiddleware, async (req, res) => {
   }
 });
 
-// ========== ROUTE DYNAMIQUE (TOUJOURS EN DERNIER) ==========
-router.get('/:userId', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur' });
-  }
-});
-
 // ========== ROUTES DE NOTIFICATION ==========
-
-// 🔔 COMPTER LES MESSAGES NON LUS
-// 🔔 COMPTER LES MESSAGES NON LUS
 
 router.get('/unread-count', authMiddleware, async (req, res) => {
   console.log('🔔 Route /unread-count appelée pour userId:', req.userId);
@@ -230,9 +316,7 @@ router.get('/unread-count', authMiddleware, async (req, res) => {
     let unreadCount = 0;
     for (const conv of conversations) {
       for (const msg of conv.messages) {
-        // Vérifier si le message n'est pas de l'utilisateur courant
         if (msg.senderId.toString() !== req.userId) {
-          // Vérifier si readBy existe et si l'utilisateur ne l'a pas déjà lu
           const isRead = msg.readBy && msg.readBy.includes(req.userId);
           if (!isRead) {
             unreadCount++;
@@ -250,7 +334,6 @@ router.get('/unread-count', authMiddleware, async (req, res) => {
   }
 });
 
-// 👁️ MARQUER LES MESSAGES COMME LUS
 router.post('/conversation/:conversationId/read', authMiddleware, async (req, res) => {
   try {
     const conversation = await Conversation.findById(req.params.conversationId);
@@ -273,206 +356,17 @@ router.post('/conversation/:conversationId/read', authMiddleware, async (req, re
   }
 });
 
-
-// ========== ROUTES DE GESTION DES MESSAGES ==========
-
-// 🗑️ SUPPRIMER UN MESSAGE (pour l'expéditeur uniquement)
-router.delete('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
+// ========== ROUTE DYNAMIQUE (TOUJOURS EN DERNIER) ==========
+router.get('/:userId', authMiddleware, async (req, res) => {
   try {
-    const { conversationId, messageId } = req.params;
-
-    console.log(`🗑️ Tentative de suppression du message ${messageId}`);
-
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation non trouvée' });
+    const user = await User.findById(req.params.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
-
-    // Vérifier que l'utilisateur est participant
-    if (!conversation.participants.includes(req.userId)) {
-      return res.status(403).json({ message: 'Non autorisé' });
-    }
-
-    // Trouver le message
-    const messageIndex = conversation.messages.findIndex(
-      msg => msg._id.toString() === messageId
-    );
-
-    if (messageIndex === -1) {
-      return res.status(404).json({ message: 'Message non trouvé' });
-    }
-
-    const message = conversation.messages[messageIndex];
-
-    // Vérifier que l'utilisateur est l'expéditeur
-    if (message.senderId.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Vous ne pouvez supprimer que vos propres messages' });
-    }
-
-    // Supprimer le message
-    conversation.messages.splice(messageIndex, 1);
-    await conversation.save();
-
-    console.log(`✅ Message ${messageId} supprimé avec succès`);
-
-    // Notifier les participants via Socket.IO
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`conv_${conversationId}`).emit('message_deleted', {
-        messageId,
-        conversationId,
-        deletedBy: req.userId
-      });
-    }
-
-    res.json({ message: 'Message supprimé avec succès' });
+    res.json(user);
   } catch (error) {
-    console.error('❌ Erreur suppression message:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Erreur' });
   }
 });
-
-// 🗑️ SUPPRIMER POUR TOUT LE MONDE (admin seulement)
-router.delete('/conversation/:conversationId/message/:messageId/admin', authMiddleware, async (req, res) => {
-  try {
-    const { conversationId, messageId } = req.params;
-
-    // Vérifier que l'utilisateur est admin
-    const admin = await User.findById(req.userId);
-    if (!admin || admin.role !== 'admin') {
-      return res.status(403).json({ message: 'Non autorisé' });
-    }
-
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation non trouvée' });
-    }
-
-    const messageIndex = conversation.messages.findIndex(
-      msg => msg._id.toString() === messageId
-    );
-
-    if (messageIndex === -1) {
-      return res.status(404).json({ message: 'Message non trouvé' });
-    }
-
-    conversation.messages.splice(messageIndex, 1);
-    await conversation.save();
-
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`conv_${conversationId}`).emit('message_deleted', {
-        messageId,
-        conversationId,
-        deletedBy: req.userId,
-        adminDelete: true
-      });
-    }
-
-    res.json({ message: 'Message supprimé par l\'administrateur' });
-  } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// ✏️ MODIFIER UN MESSAGE
-router.put('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
-  try {
-    const { conversationId, messageId } = req.params;
-    const { content } = req.body;
-
-    if (!content || content.trim() === '') {
-      return res.status(400).json({ message: 'Le contenu est requis' });
-    }
-
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation non trouvée' });
-    }
-
-    if (!conversation.participants.includes(req.userId)) {
-      return res.status(403).json({ message: 'Non autorisé' });
-    }
-
-    const message = conversation.messages.find(msg => msg._id.toString() === messageId);
-    if (!message) {
-      return res.status(404).json({ message: 'Message non trouvé' });
-    }
-
-    if (message.senderId.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages' });
-    }
-
-    message.content = content;
-    message.edited = true;
-    message.editedAt = new Date();
-    await conversation.save();
-
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`conv_${conversationId}`).emit('message_edited', {
-        messageId,
-        conversationId,
-        content,
-        editedAt: new Date()
-      });
-    }
-
-    res.json({ message: 'Message modifié avec succès' });
-  } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-
-
-
 
 export default router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
