@@ -31,6 +31,7 @@ export default function NotificationBadge() {
 
     fetchUser();
 
+    // Décoder le token pour obtenir userId
     let userId = null;
     try {
       const base64Url = token.split('.')[1];
@@ -39,7 +40,6 @@ export default function NotificationBadge() {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
       userId = JSON.parse(jsonPayload).userId;
-      console.log('📢 NotificationBadge - userId décodé:', userId);
     } catch (error) {
       console.error('Erreur décodage token:', error);
       return;
@@ -47,22 +47,13 @@ export default function NotificationBadge() {
 
     if (!userId) return;
 
-    console.log('📢 NotificationBadge - Connexion Socket à:', SOCKET_URL);
     const newSocket = io(SOCKET_URL, {
       auth: { userId },
       transports: ['websocket', 'polling']
     });
 
-    newSocket.on('connect', () => {
-      console.log('📢 NotificationBadge - Socket CONNECTÉ ! userId:', userId);
-    });
-
-    newSocket.on('disconnect', () => {
-      console.log('📢 NotificationBadge - Socket DÉCONNECTÉ');
-    });
-
     newSocket.on('new_message_notification', (data: any) => {
-      console.log('🔔🔔🔔 NOTIFICATION REÇUE DANS LE BADGE 🔔🔔🔔', data);
+      console.log('🔔 Nouveau message reçu:', data);
       setUnreadCount(prev => prev + 1);
       setNotifications(prev => [{
         id: Date.now().toString(),
@@ -82,11 +73,6 @@ export default function NotificationBadge() {
       }
     });
 
-    // 🔥 LOG POUR VOIR TOUS LES ÉVÉNEMENTS
-    newSocket.onAny((event, ...args) => {
-      console.log('📡 [NotificationBadge] Événement reçu:', event, args);
-    });
-
     setSocket(newSocket);
 
     return () => {
@@ -99,12 +85,13 @@ export default function NotificationBadge() {
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('token');
+      // ✅ Utiliser API_URL au lieu de process.env
       const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
     } catch (error) {
-      console.error('Erreur fetchUser:', error);
+      console.error('Erreur:', error);
     }
   };
 
@@ -197,6 +184,10 @@ export default function NotificationBadge() {
     </div>
   );
 }
+
+
+
+
 
 
 
