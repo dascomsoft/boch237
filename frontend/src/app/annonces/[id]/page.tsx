@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-import { MapPin, BookOpen, Clock, User, Phone, Calendar, ArrowLeft } from 'lucide-react';
+import { MapPin, BookOpen, Clock, User, Calendar, ArrowLeft, MessageCircle } from 'lucide-react';
 import { API_URL } from '@/lib/api';
 
 interface Annonce {
@@ -18,6 +18,7 @@ interface Annonce {
   duration: string;
   parentName: string;
   parentPhone: string;
+  parentId?: string;
   status: string;
   createdAt: string;
 }
@@ -61,20 +62,30 @@ export default function AnnonceDetailPage() {
   };
 
   const startChat = async () => {
-    if (!annonce) return;
+    if (!annonce || !annonce.parentId) {
+      alert('Impossible de contacter ce parent');
+      return;
+    }
     
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+      
       // Créer une conversation avec le parent qui a publié l'annonce
       const response = await axios.post(
         `${API_URL}/users/conversation`,
         { tutorId: annonce.parentId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
+      // Rediriger vers le chat
       router.push(`/chat?convId=${response.data._id}`);
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Impossible de contacter le parent');
+      alert('Impossible de contacter le parent. Veuillez réessayer.');
     }
   };
 
@@ -154,23 +165,36 @@ export default function AnnonceDetailPage() {
           <h2 className="text-green-400 font-bold mb-3 flex items-center gap-2">
             <User size={16} /> Publié par
           </h2>
-          <p className="text-white">{annonce.parentName}</p>
-          
-          {/* Bouton contacter - seulement pour les répétiteurs */}
-          {user && user.role === 'tutor' && (
-            <button
-              onClick={startChat}
-              className="w-full mt-3 bg-green-600 text-white p-2 rounded-lg flex items-center justify-center gap-2"
-            >
-              <Phone size={16} /> Contacter le parent
-            </button>
-          )}
+          <p className="text-white font-medium">{annonce.parentName}</p>
         </div>
+
+        {/* BOUTON CONTACTER - Visible pour tous les utilisateurs connectés */}
+        {user ? (
+          <button
+            onClick={startChat}
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 shadow-lg"
+          >
+            <MessageCircle size={18} />
+            Contacter {annonce.parentName}
+          </button>
+        ) : (
+          <div className="bg-slate-800 rounded-xl p-4 text-center">
+            <p className="text-gray-400 text-sm">
+              🔒 Connectez-vous pour contacter {annonce.parentName}
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-3 bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            >
+              Se connecter
+            </button>
+          </div>
+        )}
 
         {/* Note */}
         <div className="bg-blue-600/20 border border-blue-500 rounded-xl p-3">
           <p className="text-blue-400 text-xs text-center">
-            ℹ️ Cette annonce a été vérifiée par notre équipe. Pour postuler, utilisez le bouton "Contacter".
+            ℹ️ Cette annonce a été vérifiée par notre équipe. Cliquez sur "Contacter" pour discuter avec le parent.
           </p>
         </div>
       </div>
