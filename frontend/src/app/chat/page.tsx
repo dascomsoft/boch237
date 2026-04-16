@@ -214,6 +214,29 @@ function ChatContent() {
   const [otherUsers, setOtherUsers] = useState<Record<string, User>>({});
   const [loading, setLoading] = useState(true);
 
+  // Fonction pour formater la date et l'heure
+  const formatLastActivity = (timestamp: Date) => {
+    const msgDate = new Date(timestamp);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDay = new Date(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate());
+    
+    const diffDays = Math.floor((today.getTime() - msgDay.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const timeStr = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    if (diffDays === 0) {
+      return `Aujourd'hui à ${timeStr}`;
+    } else if (diffDays === 1) {
+      return `Hier à ${timeStr}`;
+    } else if (diffDays < 7) {
+      const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      return `${days[msgDate.getDay()]} à ${timeStr}`;
+    } else {
+      return `${msgDate.toLocaleDateString()} à ${timeStr}`;
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -280,7 +303,6 @@ function ChatContent() {
     }
   };
 
-  // ✅ SUPPRIMER UN MESSAGE
   const handleDeleteMessage = (messageId: string) => {
     if (currentConversation) {
       setCurrentConversation({
@@ -290,7 +312,6 @@ function ChatContent() {
     }
   };
 
-  // ✅ MODIFIER UN MESSAGE
   const handleEditMessage = (messageId: string, newContent: string) => {
     if (currentConversation) {
       setCurrentConversation({
@@ -368,8 +389,9 @@ function ChatContent() {
                         )}
                       </div>
                       <div className="text-right">
+                        {/* ✅ Affichage formaté de la date et l'heure */}
                         <p className="text-gray-500 text-xs">
-                          {new Date(conv.lastActivity).toLocaleDateString()}
+                          {formatLastActivity(conv.lastActivity)}
                         </p>
                       </div>
                     </div>
