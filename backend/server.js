@@ -25,6 +25,9 @@ const io = new Server(httpServer, {
   allowEIO3: true
 });
 
+// ✅ IMPORTANT : Rendre io accessible dans les routes
+app.set('io', io);
+
 // Middleware CORS pour Express
 app.use(cors({
   origin: ["https://boch237.vercel.app", "http://localhost:3000"],
@@ -63,7 +66,6 @@ mongoose.connection.once('open', async () => {
     const count = await Conversation.countDocuments();
     console.log(`📊 [STARTUP] ${count} conversations trouvées dans la base`);
     
-    // Afficher les IDs des conversations existantes
     const conversations = await Conversation.find().select('_id participants');
     console.log(`📊 [STARTUP] IDs des conversations:`, conversations.map(c => c._id.toString()));
   } catch (error) {
