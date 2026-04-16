@@ -32,7 +32,7 @@ export default function MobileNav({ userRole }: MobileNavProps) {
   if (filteredItems.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-green-500 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-green-500 z-50 max-w-4xl mx-auto">
       <div className="flex justify-around p-3 max-w-md mx-auto">
         {filteredItems.map((item) => {
           const Icon = item.icon;

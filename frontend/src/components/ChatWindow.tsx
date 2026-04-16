@@ -105,7 +105,7 @@ const ChatWindow = ({
   );
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-slate-900 pb-16">
+    <div className="fixed inset-0 max-w-4xl mx-auto flex flex-col bg-slate-900 pb-16">
       {/* Header fixe en haut */}
       <div className="flex-shrink-0 bg-green-600 p-4 shadow-lg">
         <div className="flex justify-between items-center">

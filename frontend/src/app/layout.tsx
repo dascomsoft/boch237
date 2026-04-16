@@ -208,6 +208,12 @@
 
 
 
+
+
+
+
+
+
 import type { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
 import './globals.css';
@@ -235,7 +241,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className={`${nunito.variable} font-sans bg-slate-900`}>
-        <div className="min-h-screen">
+        <div className="min-h-screen max-w-4xl mx-auto">
           <div className="sticky top-0 z-20 bg-green-600 p-2 flex justify-end">
             <NotificationBadge />
           </div>

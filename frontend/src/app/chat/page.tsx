@@ -98,7 +98,7 @@ function ChatContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-20">
+    <div className="min-h-screen  bg-slate-900 pb-20">
       {currentConversation && currentUser && otherUser ? (
         <ChatWindow
           conversationId={currentConversation._id}
