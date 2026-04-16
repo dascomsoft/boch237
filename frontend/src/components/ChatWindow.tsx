@@ -53,15 +53,22 @@ const ChatWindow = ({
     });
 
     socket.on('new_message', (message: Message) => {
+      console.log('📩 Nouveau message reçu:', message);
       onNewMessage(message);
     });
 
     socket.on('message_deleted', (data: { messageId: string }) => {
-      if (onDeleteMessage) onDeleteMessage(data.messageId);
+      console.log('🗑️ Message supprimé via socket:', data.messageId);
+      if (onDeleteMessage) {
+        onDeleteMessage(data.messageId);
+      }
     });
 
     socket.on('message_edited', (data: { messageId: string; content: string }) => {
-      if (onEditMessage) onEditMessage(data.messageId, data.content);
+      console.log('✏️ Message modifié via socket:', data);
+      if (onEditMessage) {
+        onEditMessage(data.messageId, data.content);
+      }
     });
 
     return () => {
@@ -83,27 +90,43 @@ const ChatWindow = ({
   };
 
   const handleDeleteMessage = async (messageId: string) => {
+    if (!messageId) {
+      console.error('❌ messageId undefined');
+      return;
+    }
+
     if (!confirm('Supprimer ce message ?')) return;
-    
+
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/users/conversation/${conversationId}/message/${messageId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(
+        `${API_URL}/users/conversation/${conversationId}/message/${messageId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       setShowMenu(null);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur suppression:', error);
     }
   };
 
   const startEditMessage = (msg: Message) => {
-    setEditingMessage({ id: msg._id!, content: msg.content });
+    if (!msg._id) return;
+    console.log('📝 Édition du message ID:', msg._id);
+    setEditingMessage({ id: msg._id, content: msg.content });
     setShowMenu(null);
     setTimeout(() => editInputRef.current?.focus(), 100);
   };
 
   const saveEditMessage = async () => {
+    if (!editingMessage?.id) {
+      console.error('❌ editingMessage.id undefined');
+      return;
+    }
     if (!editingMessage?.content.trim()) return;
+    
+    console.log('💾 Sauvegarde édition ID:', editingMessage.id);
     
     try {
       const token = localStorage.getItem('token');
@@ -114,8 +137,13 @@ const ChatWindow = ({
       );
       setEditingMessage(null);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur modification:', error);
+      alert('Impossible de modifier le message');
     }
+  };
+
+  const cancelEdit = () => {
+    setEditingMessage(null);
   };
 
   const sortedMessages = [...messages].sort(
@@ -123,7 +151,7 @@ const ChatWindow = ({
   );
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-slate-900">
+    <div className="fixed inset-0 max-w-4xl mx-auto pt-10 flex flex-col bg-slate-900 pb-16">
       {/* Header */}
       <div className="bg-green-600 p-4">
         <h3 className="text-white font-bold text-lg">{otherUser.name}</h3>
@@ -145,22 +173,30 @@ const ChatWindow = ({
               }`}
               onContextMenu={(e) => {
                 e.preventDefault();
-                if (msg.senderId === currentUserId) {
-                  setShowMenu(showMenu === msg._id ? null : msg._id!);
+                // Afficher le menu seulement pour ses propres messages ET si l'ID existe
+                if (msg.senderId === currentUserId && msg._id) {
+                  setShowMenu(showMenu === msg._id ? null : msg._id);
                 }
               }}
             >
-              <p className="text-sm">{msg.content}</p>
+              <p className="text-sm break-words">{msg.content}</p>
               <span className="text-[10px] opacity-70 block mt-1">
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
               
-              {showMenu === msg._id && msg.senderId === currentUserId && (
-                <div className="absolute -top-8 right-0 bg-slate-800 rounded-lg shadow-lg flex overflow-hidden">
-                  <button onClick={() => startEditMessage(msg)} className="px-3 py-1 text-xs text-white hover:bg-slate-700">
+              {/* Menu contextuel (clic droit) */}
+              {showMenu === msg._id && (
+                <div className="absolute -top-8 right-0 bg-slate-800 rounded-lg shadow-lg flex overflow-hidden z-50">
+                  <button
+                    onClick={() => startEditMessage(msg)}
+                    className="px-3 py-1.5 text-xs text-white hover:bg-slate-700 transition-colors"
+                  >
                     ✏️ Modifier
                   </button>
-                  <button onClick={() => handleDeleteMessage(msg._id!)} className="px-3 py-1 text-xs text-red-400 hover:bg-slate-700">
+                  <button
+                    onClick={() => handleDeleteMessage(msg._id!)}
+                    className="px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700 transition-colors"
+                  >
                     🗑️ Supprimer
                   </button>
                 </div>
@@ -192,6 +228,31 @@ const ChatWindow = ({
           </button>
         </div>
       </div>
+
+      {/* Modal d'édition */}
+      {editingMessage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl p-4 w-full max-w-sm">
+            <h3 className="text-white font-bold mb-3">Modifier le message</h3>
+            <input
+              ref={editInputRef}
+              type="text"
+              value={editingMessage.content}
+              onChange={(e) => setEditingMessage({ ...editingMessage, content: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg bg-slate-900 text-white border border-green-500 focus:outline-none"
+              autoFocus
+            />
+            <div className="flex gap-2 mt-4">
+              <button onClick={saveEditMessage} className="flex-1 bg-green-600 py-2 rounded-lg text-white">
+                Enregistrer
+              </button>
+              <button onClick={cancelEdit} className="flex-1 bg-gray-600 py-2 rounded-lg text-white">
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

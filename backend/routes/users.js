@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
 import { authMiddleware } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -112,13 +113,14 @@ router.delete('/conversation/:conversationId/message/:messageId', authMiddleware
   }
 });
 
+//  MODIFIER UN MESSAGE
 // ✏️ MODIFIER UN MESSAGE
 router.put('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
   try {
     const { conversationId, messageId } = req.params;
     const { content } = req.body;
 
-    console.log(`✏️ Tentative de modification du message ${messageId}`);
+    console.log(`✏️ Modification - conversationId: ${conversationId}, messageId: ${messageId}`);
 
     if (!content || content.trim() === '') {
       return res.status(400).json({ message: 'Le contenu est requis' });
@@ -133,8 +135,13 @@ router.put('/conversation/:conversationId/message/:messageId', authMiddleware, a
       return res.status(403).json({ message: 'Non autorisé' });
     }
 
-    const message = conversation.messages.find(msg => msg._id.toString() === messageId);
+    // Convertir messageId en ObjectId pour la comparaison
+    const messageObjectId = new mongoose.Types.ObjectId(messageId);
+    
+    const message = conversation.messages.find(msg => msg._id.equals(messageObjectId));
+    
     if (!message) {
+      console.log('❌ Message non trouvé. IDs disponibles:', conversation.messages.map(m => m._id.toString()));
       return res.status(404).json({ message: 'Message non trouvé' });
     }
 
@@ -142,29 +149,41 @@ router.put('/conversation/:conversationId/message/:messageId', authMiddleware, a
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages' });
     }
 
+    // Modifier le message
     message.content = content;
     message.edited = true;
     message.editedAt = new Date();
+
     await conversation.save();
 
     console.log(`✅ Message ${messageId} modifié avec succès`);
 
+    // Notifier via Socket.IO
     const io = req.app.get('io');
     if (io) {
       io.to(`conv_${conversationId}`).emit('message_edited', {
         messageId,
         conversationId,
-        content,
-        editedAt: new Date()
+        content: message.content,
+        editedAt: message.editedAt
       });
     }
 
     res.json({ message: 'Message modifié avec succès' });
   } catch (error) {
     console.error('❌ Erreur modification message:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 });
+
+
+
+
+
+
+
+
+
 
 // ========== ROUTES ADMIN (spécifiques) ==========
 
