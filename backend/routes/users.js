@@ -219,14 +219,14 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 
 router.get('/unread-count', authMiddleware, async (req, res) => {
   console.log('🔔 Route /unread-count appelée pour userId:', req.userId);
-  
+
   try {
     const conversations = await Conversation.find({
       participants: req.userId
     });
-    
+
     console.log(`📊 ${conversations.length} conversations trouvées`);
-    
+
     let unreadCount = 0;
     for (const conv of conversations) {
       for (const msg of conv.messages) {
@@ -240,10 +240,10 @@ router.get('/unread-count', authMiddleware, async (req, res) => {
         }
       }
     }
-    
+
     console.log(`🔔 ${unreadCount} messages non lus`);
     res.json({ unreadCount });
-    
+
   } catch (error) {
     console.error('❌ Erreur détaillée:', error);
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
@@ -272,6 +272,164 @@ router.post('/conversation/:conversationId/read', authMiddleware, async (req, re
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+
+// ========== ROUTES DE GESTION DES MESSAGES ==========
+
+// 🗑️ SUPPRIMER UN MESSAGE (pour l'expéditeur uniquement)
+router.delete('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+
+    console.log(`🗑️ Tentative de suppression du message ${messageId}`);
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    }
+
+    // Vérifier que l'utilisateur est participant
+    if (!conversation.participants.includes(req.userId)) {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    // Trouver le message
+    const messageIndex = conversation.messages.findIndex(
+      msg => msg._id.toString() === messageId
+    );
+
+    if (messageIndex === -1) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    const message = conversation.messages[messageIndex];
+
+    // Vérifier que l'utilisateur est l'expéditeur
+    if (message.senderId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Vous ne pouvez supprimer que vos propres messages' });
+    }
+
+    // Supprimer le message
+    conversation.messages.splice(messageIndex, 1);
+    await conversation.save();
+
+    console.log(`✅ Message ${messageId} supprimé avec succès`);
+
+    // Notifier les participants via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversationId}`).emit('message_deleted', {
+        messageId,
+        conversationId,
+        deletedBy: req.userId
+      });
+    }
+
+    res.json({ message: 'Message supprimé avec succès' });
+  } catch (error) {
+    console.error('❌ Erreur suppression message:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// 🗑️ SUPPRIMER POUR TOUT LE MONDE (admin seulement)
+router.delete('/conversation/:conversationId/message/:messageId/admin', authMiddleware, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+
+    // Vérifier que l'utilisateur est admin
+    const admin = await User.findById(req.userId);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    }
+
+    const messageIndex = conversation.messages.findIndex(
+      msg => msg._id.toString() === messageId
+    );
+
+    if (messageIndex === -1) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    conversation.messages.splice(messageIndex, 1);
+    await conversation.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversationId}`).emit('message_deleted', {
+        messageId,
+        conversationId,
+        deletedBy: req.userId,
+        adminDelete: true
+      });
+    }
+
+    res.json({ message: 'Message supprimé par l\'administrateur' });
+  } catch (error) {
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// ✏️ MODIFIER UN MESSAGE
+router.put('/conversation/:conversationId/message/:messageId', authMiddleware, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: 'Le contenu est requis' });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    }
+
+    if (!conversation.participants.includes(req.userId)) {
+      return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    const message = conversation.messages.find(msg => msg._id.toString() === messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    if (message.senderId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages' });
+    }
+
+    message.content = content;
+    message.edited = true;
+    message.editedAt = new Date();
+    await conversation.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversationId}`).emit('message_edited', {
+        messageId,
+        conversationId,
+        content,
+        editedAt: new Date()
+      });
+    }
+
+    res.json({ message: 'Message modifié avec succès' });
+  } catch (error) {
+    console.error('Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+
+
+
+
 export default router;
 
 

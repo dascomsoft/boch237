@@ -26,19 +26,19 @@ export default function TutorProfilePage() {
   const fetchData = async (token: string) => {
     try {
       const tutorId = params.id as string;
-      
+
       // Récupérer le profil du répétiteur
       const tutorResponse = await axios.get(`${API_URL}/users/${tutorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTutor(tutorResponse.data);
-      
+
       // Récupérer l'utilisateur courant
       const userResponse = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCurrentUser(userResponse.data);
-      
+
     } catch (error) {
       console.error('Erreur chargement:', error);
     } finally {
@@ -73,7 +73,7 @@ export default function TutorProfilePage() {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-white">Répétiteur non trouvé</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg"
           >
@@ -87,17 +87,17 @@ export default function TutorProfilePage() {
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
       {/* Header */}
-{/* Header */}
-<div className="bg-green-600 p-4 space-y-4 pt-15 fixed top-0 left-0 w-full shadow-md">
-  <div className="flex items-center gap-3">
-    <button onClick={() => router.back()} className="text-white">
-      <ArrowLeft size={24} />
-    </button>
-    <h1 className="text-white text-xl font-bold truncate">
-      Profil du répétiteur
-    </h1>
-  </div>
-</div>
+      {/* Header */}
+      <div className="bg-green-600 p-4 space-y-4 pt-15 fixed top-0 left-0 w-full shadow-md">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-white">
+            <ArrowLeft size={24} />
+          </button>
+          <h1 className="text-white text-xl font-bold truncate">
+            Profil du répétiteur
+          </h1>
+        </div>
+      </div>
 
       <div className="p-4 space-y-4">
         {/* Photo et nom */}
@@ -164,11 +164,10 @@ export default function TutorProfilePage() {
         <button
           onClick={startChat}
           disabled={!tutor.isActive}
-          className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${
-            tutor.isActive 
-              ? 'bg-green-600 hover:bg-green-700 text-white' 
+          className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${tutor.isActive
+              ? 'bg-green-600 hover:bg-green-700 text-white'
               : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-          }`}
+            }`}
         >
           <MessageCircle size={20} />
           {tutor.isActive ? 'Démarrer une conversation' : 'Indisponible pour le moment'}
