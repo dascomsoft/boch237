@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { MapPin, BookOpen, Clock, User, Phone, Calendar, ArrowLeft } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 interface Annonce {
   _id: string;
@@ -38,7 +39,7 @@ export default function AnnonceDetailPage() {
 
   const fetchUser = async (token: string) => {
     try {
-      const response = await axios.get('http://localhost:5001/api/users/me', {
+      const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
@@ -49,8 +50,7 @@ export default function AnnonceDetailPage() {
 
   const fetchAnnonce = async () => {
     try {
-      // Pour l'instant, on récupère toutes les annonces et on filtre
-      const response = await axios.get('http://localhost:5001/api/annonces');
+      const response = await axios.get(`${API_URL}/annonces`);
       const found = response.data.find((a: any) => a._id === params.id);
       setAnnonce(found);
     } catch (error) {
@@ -61,8 +61,21 @@ export default function AnnonceDetailPage() {
   };
 
   const startChat = async () => {
-    // Implémenter la logique de chat avec le parent
-    alert('Fonctionnalité à venir : Contacter le parent');
+    if (!annonce) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      // Créer une conversation avec le parent qui a publié l'annonce
+      const response = await axios.post(
+        `${API_URL}/users/conversation`,
+        { tutorId: annonce.parentId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      router.push(`/chat?convId=${response.data._id}`);
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Impossible de contacter le parent');
+    }
   };
 
   if (loading) {
