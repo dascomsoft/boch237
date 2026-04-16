@@ -415,8 +415,109 @@
 
 
 
+// import Conversation from '../models/Conversation.js';
+// import mongoose from 'mongoose';
+
+// export const setupSocket = (io) => {
+//   io.use((socket, next) => {
+//     const userId = socket.handshake.auth.userId;
+//     if (!userId) return next(new Error("Invalid user"));
+//     socket.userId = userId;
+//     next();
+//   });
+
+//   io.on('connection', async (socket) => {
+//     console.log('🟢 User connected:', socket.userId);
+
+//     // ✅ AJOUT CRUCIAL (NE PAS SUPPRIMER)
+//     socket.join(`user_${socket.userId}`);
+//     console.log(`🔔 User ${socket.userId} joined personal room`);
+
+//     socket.on('join_conversation', (conversationId) => {
+//       socket.join(`conv_${conversationId}`);
+//       console.log('📌 Joined conversation:', conversationId);
+//     });
+
+//     socket.on('send_message', async (data) => {
+//       console.log('📨 Message reçu:', data);
+//       const { conversationId, content, receiverId } = data;
+
+//       try {
+//         if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+//           console.log('❌ ID INVALIDE');
+//           return;
+//         }
+
+//         const conversation = await Conversation.findById(conversationId);
+//         if (!conversation) {
+//           console.log('❌ Conversation non trouvée');
+//           return;
+//         }
+
+//         const newMessage = {
+//           senderId: socket.userId,
+//           content,
+//           timestamp: new Date(),
+//           isAlert: false
+//         };
+
+//         conversation.messages.push(newMessage);
+//         conversation.lastActivity = new Date();
+
+//         await conversation.save();
+
+//         const savedMessage = conversation.messages[conversation.messages.length - 1];
+
+//         console.log('✅ Message sauvegardé avec ID:', savedMessage._id);
+
+//         io.to(`conv_${conversationId}`).emit('new_message', savedMessage);
+
+//         // 🔔 Notification
+//         if (receiverId && receiverId !== socket.userId) {
+//           console.log(`🔔 Tentative envoi notification à user_${receiverId}`);
+
+//           io.to(`user_${receiverId}`).emit('new_message_notification', {
+//             conversationId,
+//             senderId: socket.userId,
+//             content: content.substring(0, 50),
+//             timestamp: new Date()
+//           });
+
+//           console.log(`✅ Notification envoyée à user_${receiverId}`);
+//         }
+
+//       } catch (error) {
+//         console.error('❌ Erreur:', error);
+//       }
+//     });
+
+//     socket.on('disconnect', () => {
+//       console.log('🔴 User disconnected:', socket.userId);
+//     });
+//   });
+// };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import Conversation from '../models/Conversation.js';
 import mongoose from 'mongoose';
+import User from '../models/User.js'; // ✅ AJOUT
 
 export const setupSocket = (io) => {
   io.use((socket, next) => {
@@ -429,7 +530,7 @@ export const setupSocket = (io) => {
   io.on('connection', async (socket) => {
     console.log('🟢 User connected:', socket.userId);
 
-    // ✅ AJOUT CRUCIAL (NE PAS SUPPRIMER)
+    // ✅ ROOM USER (notifications)
     socket.join(`user_${socket.userId}`);
     console.log(`🔔 User ${socket.userId} joined personal room`);
 
@@ -472,18 +573,21 @@ export const setupSocket = (io) => {
 
         io.to(`conv_${conversationId}`).emit('new_message', savedMessage);
 
-        // 🔔 Notification
+        // 🔔 NOTIFICATION AVEC NOM
         if (receiverId && receiverId !== socket.userId) {
           console.log(`🔔 Tentative envoi notification à user_${receiverId}`);
+
+          const sender = await User.findById(socket.userId).select('name');
 
           io.to(`user_${receiverId}`).emit('new_message_notification', {
             conversationId,
             senderId: socket.userId,
+            senderName: sender?.name || 'Utilisateur', // ✅ AJOUT
             content: content.substring(0, 50),
             timestamp: new Date()
           });
 
-          console.log(`✅ Notification envoyée à user_${receiverId}`);
+          console.log(`✅ Notification envoyée à user_${receiverId} (${sender?.name})`);
         }
 
       } catch (error) {
@@ -496,6 +600,3 @@ export const setupSocket = (io) => {
     });
   });
 };
-
-
-
