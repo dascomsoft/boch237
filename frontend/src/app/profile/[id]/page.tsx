@@ -88,7 +88,7 @@ export default function TutorProfilePage() {
     <div className="min-h-screen bg-slate-900 pb-20">
       {/* Header */}
       {/* Header */}
-      <div className="bg-green-600 p-4 space-y-4 pt-15 fixed top-0 left-0 w-full shadow-md">
+      <div className="bg-green-600 p-4 space-y-4 pt-15 sticky top-0 left-0 w-full shadow-md">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="text-white">
             <ArrowLeft size={24} />

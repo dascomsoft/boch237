@@ -29,7 +29,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMessage('');
-    
+
     try {
       if (isLogin) {
         // 🔐 CONNEXION
@@ -37,9 +37,9 @@ export default function LoginPage() {
           phone: form.phone,
           password: form.password
         });
-        
+
         localStorage.setItem('token', response.data.token);
-        
+
         if (response.data.user.role === 'admin') {
           router.push('/admin');
         } else {
@@ -58,12 +58,12 @@ export default function LoginPage() {
           subjects: form.subjects ? form.subjects.split(',').map(s => s.trim()) : [],
           classes: form.classes ? form.classes.split(',').map(c => c.trim()) : []
         };
-        
+
         await axios.post(`${API_URL}/auth/register`, requestData);
-        
+
         // ✅ Succès de l'inscription
         setSuccessMessage('✅ Compte créé avec succès ! Veuillez vous connecter.');
-        
+
         // 🔄 Réinitialiser le formulaire
         setForm({
           phone: '',
@@ -76,7 +76,7 @@ export default function LoginPage() {
           subjects: '',
           classes: ''
         });
-        
+
         // 🔁 Basculer vers le mode Connexion
         setIsLogin(true);
       }
@@ -90,16 +90,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex flex-col items-center justify-center mb-6">
-         <div className="w-36 h-36 relative mb-3 rounded-full overflow-hidden">
-         <Image
-           src="/bochlogo.png"
-           alt="Boch237 Logo"
-           fill
-           className="object-cover"
-           priority
-           />
-           </div>
+        <div className="flex flex-col items-center justify-center mb-6 fixedmax-4xl max-auto">
+          <div className="w-36 h-36 relative mb-3 rounded-full overflow-hidden">
+            <Image
+              src="/bochlogo.png"
+              alt="Boch237 Logo"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
           <h1 className="text-white text-2xl font-bold">Boch237</h1>
           <p className="text-green-400 text-sm mt-1 font-medium">La réussite, simplifiée</p>
           <p className="text-gray-400 text-sm mt-2">
@@ -114,9 +114,8 @@ export default function LoginPage() {
               setError('');
               setSuccessMessage('');
             }}
-            className={`flex-1 py-2 rounded-lg transition-colors ${
-              isLogin ? 'bg-green-600 text-white' : 'text-gray-400'
-            }`}
+            className={`flex-1 py-2 rounded-lg transition-colors ${isLogin ? 'bg-green-600 text-white' : 'text-gray-400'
+              }`}
           >
             Connexion
           </button>
@@ -126,9 +125,8 @@ export default function LoginPage() {
               setError('');
               setSuccessMessage('');
             }}
-            className={`flex-1 py-2 rounded-lg transition-colors ${
-              !isLogin ? 'bg-green-600 text-white' : 'text-gray-400'
-            }`}
+            className={`flex-1 py-2 rounded-lg transition-colors ${!isLogin ? 'bg-green-600 text-white' : 'text-gray-400'
+              }`}
           >
             Inscription
           </button>
@@ -155,7 +153,7 @@ export default function LoginPage() {
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             required
           />
-          
+
           <input
             type="password"
             placeholder="Mot de passe *"
@@ -164,7 +162,7 @@ export default function LoginPage() {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
           />
-          
+
           {!isLogin && (
             <>
               <input
@@ -175,7 +173,7 @@ export default function LoginPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
               />
-              
+
               <select
                 className="w-full p-3 rounded-lg bg-slate-900 text-white"
                 value={form.role}
@@ -230,7 +228,7 @@ export default function LoginPage() {
               )}
             </>
           )}
-          
+
           <button
             type="submit"
             disabled={loading}
