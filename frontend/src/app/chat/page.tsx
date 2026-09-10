@@ -1,5 +1,3 @@
-
-
 'use client';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -55,18 +53,21 @@ function ChatContent() {
   const fetchData = async (token: string) => {
     setLoading(true);
     try {
+      // 1. Récupérer l'utilisateur courant
       const userResponse = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const currentUserData = userResponse.data;
       setCurrentUser(currentUserData);
       
+      // 2. Récupérer les conversations
       const convResponse = await axios.get(`${API_URL}/users/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const conversationsData = convResponse.data;
       setConversations(conversationsData);
       
+      // 3. Charger les autres utilisateurs (avec protection 404)
       const usersMap: Record<string, User> = {};
       for (const conv of conversationsData) {
         const otherId = conv.participants.find((id: string) => id !== currentUserData._id);
@@ -76,13 +77,27 @@ function ChatContent() {
               headers: { Authorization: `Bearer ${token}` }
             });
             usersMap[otherId] = otherRes.data;
-          } catch (err) {
-            console.error('Erreur chargement utilisateur:', err);
+          } catch (err: any) {
+            // ✅ PROTECTION : Si l'utilisateur n'existe pas, créer un placeholder
+            if (err.response?.status === 404) {
+              console.warn('⚠️ Utilisateur introuvable:', otherId);
+              usersMap[otherId] = {
+                _id: otherId,
+                name: 'Utilisateur supprimé',
+                phone: '',
+                role: 'parent',
+                isActive: false,
+                createdAt: new Date()
+              };
+            } else {
+              console.error('Erreur chargement utilisateur:', err);
+            }
           }
         }
       }
       setOtherUsers(usersMap);
       
+      // 4. Si une conversation est sélectionnée
       if (conversationId) {
         const conv = conversationsData.find((c: Conversation) => c._id === conversationId);
         if (conv) {
@@ -100,12 +115,11 @@ function ChatContent() {
     }
   };
 
-  // ✅ CORRECTION : Utiliser le pattern fonctionnel pour éviter le stale state
+  // ✅ Gestion des nouveaux messages
   const handleNewMessage = (message: Message) => {
     setCurrentConversation(prev => {
       if (!prev) return prev;
 
-      // Vérifier si le message existe déjà
       const exists = prev.messages.some(m => m._id === message._id);
       if (exists) return prev;
 
