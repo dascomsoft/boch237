@@ -20,7 +20,7 @@ async function createAdmin() {
       console.log('\n💡 Connecte-toi avec ces identifiants');
       await mongoose.disconnect();
       return;
-    }
+    }git
     
     // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash('admin123', 10);
