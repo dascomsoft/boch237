@@ -436,18 +436,18 @@ export default function Home() {
             onClick={() => router.push('/')}
             className="group flex items-center gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/20 transition-transform group-hover:scale-105">
+            {/* <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/20 transition-transform group-hover:scale-105">
               <GraduationCap size={22} className="text-white" />
-            </div>
+            </div> */}
 
-            <div className="text-left">
+            {/* <div className="text-left">
               <p className="text-lg font-bold leading-none tracking-tight">
                 Boch<span className="text-emerald-400">237</span>
               </p>
               <p className="mt-1 hidden text-[10px] uppercase tracking-[0.18em] text-slate-500 sm:block">
                 Apprendre autrement
               </p>
-            </div>
+            </div> */}
           </button>
 
           <div className="flex items-center gap-3">
