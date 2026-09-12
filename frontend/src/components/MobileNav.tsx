@@ -824,6 +824,361 @@
 
 
 
+// 'use client';
+
+// import {
+//   BookOpen,
+//   Home,
+//   LayoutDashboard,
+//   MessageCircle,
+//   User,
+// } from 'lucide-react';
+// import { usePathname, useRouter } from 'next/navigation';
+
+// interface NavItem {
+//   icon: typeof Home;
+//   label: string;
+//   path: string;
+//   roles?: Array<'parent' | 'tutor' | 'admin'>;
+// }
+
+// interface MobileNavProps {
+//   userRole?: 'parent' | 'tutor' | 'admin';
+// }
+
+// const navItems: NavItem[] = [
+//   {
+//     icon: Home,
+//     label: 'Accueil',
+//     path: '/home',
+//     roles: ['parent', 'tutor'],
+//   },
+//   {
+//     icon: MessageCircle,
+//     label: 'Messages',
+//     path: '/chat',
+//     roles: ['parent', 'tutor', 'admin'],
+//   },
+//   {
+//     icon: User,
+//     label: 'Profil',
+//     path: '/profile',
+//     roles: ['parent', 'tutor'],
+//   },
+//   {
+//     icon: LayoutDashboard,
+//     label: 'Admin',
+//     path: '/admin',
+//     roles: ['admin'],
+//   },
+// ];
+
+// export default function MobileNav({ userRole }: MobileNavProps) {
+//   const pathname = usePathname();
+//   const router = useRouter();
+
+//   const filteredItems = navItems.filter(
+//     (item) =>
+//       !item.roles || (userRole && item.roles.includes(userRole))
+//   );
+
+//   const isItemActive = (path: string) => {
+//     if (path === '/home') {
+//       return pathname === '/' || pathname === '/home';
+//     }
+
+//     return pathname === path || pathname.startsWith(`${path}/`);
+//   };
+
+//   if (filteredItems.length === 0) return null;
+
+//   const handleNavigate = (path: string) => {
+//     router.push(path);
+//   };
+
+//   return (
+//     <>
+//       {/* ============================================================
+//           SIDEBAR VERTICALE — DESKTOP UNIQUEMENT (md+)
+//       ============================================================= */}
+//       <nav
+//         id="primary-nav"
+//         aria-label="Navigation principale"
+//         className="
+//           fixed left-0 top-0 z-50
+//           hidden h-dvh w-64 flex-col
+//           border-r border-white/[0.06]
+//           bg-slate-950/95 backdrop-blur-2xl
+//           shadow-2xl shadow-black/40
+//           md:flex
+//         "
+//       >
+//         {/* ---------- Brand ---------- */}
+//         <div className="flex h-16 shrink-0 items-center border-b border-white/[0.06] px-4">
+//           <button
+//             type="button"
+//             onClick={() => handleNavigate('/home')}
+//             aria-label="Retour à l'accueil"
+//             className="
+//               flex min-w-0 items-center gap-2.5 rounded-xl
+//               transition
+//               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80
+//               active:scale-[0.98]
+//             "
+//           >
+//             <span
+//               className="
+//                 flex h-10 w-10 shrink-0 items-center justify-center
+//                 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600
+//                 shadow-lg shadow-emerald-500/20
+//               "
+//             >
+//               <BookOpen
+//                 size={20}
+//                 className="text-slate-950"
+//                 aria-hidden="true"
+//               />
+//             </span>
+
+//             <span className="truncate text-lg font-extrabold tracking-tight text-white">
+//               Boch<span className="text-emerald-400">237</span>
+//             </span>
+//           </button>
+//         </div>
+
+//         {/* ---------- Items ---------- */}
+//         <ul className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+//           {filteredItems.map((item) => {
+//             const Icon = item.icon;
+//             const isActive = isItemActive(item.path);
+
+//             return (
+//               <li key={item.path}>
+//                 <button
+//                   type="button"
+//                   onClick={() => handleNavigate(item.path)}
+//                   aria-current={isActive ? 'page' : undefined}
+//                   className={`
+//                     group relative flex w-full items-center gap-3
+//                     rounded-xl px-3 py-2.5 text-sm font-semibold
+//                     transition
+//                     focus-visible:outline-none
+//                     focus-visible:ring-2 focus-visible:ring-emerald-400/80
+//                     ${
+//                       isActive
+//                         ? 'bg-emerald-400/10 text-emerald-300'
+//                         : 'text-slate-400 hover:bg-white/[0.05] hover:text-white'
+//                     }
+//                   `}
+//                 >
+//                   {isActive && (
+//                     <span
+//                       aria-hidden="true"
+//                       className="
+//                         absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2
+//                         rounded-r-full bg-emerald-400
+//                         shadow-[0_0_10px_rgba(52,211,153,0.8)]
+//                       "
+//                     />
+//                   )}
+
+//                   <span
+//                     className={`
+//                       flex h-9 w-9 shrink-0 items-center justify-center rounded-xl
+//                       ${
+//                         isActive
+//                           ? 'bg-emerald-400/15 text-emerald-300'
+//                           : 'bg-white/[0.04] text-slate-400 group-hover:text-white'
+//                       }
+//                     `}
+//                   >
+//                     <Icon
+//                       size={17}
+//                       strokeWidth={isActive ? 2.5 : 2}
+//                       aria-hidden="true"
+//                     />
+//                   </span>
+
+//                   <span className="flex-1 text-left">
+//                     {item.label}
+//                   </span>
+
+//                   {isActive && (
+//                     <span
+//                       aria-hidden="true"
+//                       className="
+//                         h-1.5 w-1.5 rounded-full bg-emerald-400
+//                         shadow-[0_0_8px_rgba(52,211,153,0.8)]
+//                       "
+//                     />
+//                   )}
+//                 </button>
+//               </li>
+//             );
+//           })}
+//         </ul>
+
+//         {/* ---------- Footer ---------- */}
+//         <div className="shrink-0 border-t border-white/[0.06] px-5 py-4">
+//           <p className="text-[10px] uppercase tracking-[0.18em] text-slate-600">
+//             Boch237
+//           </p>
+//           <p className="mt-1 text-xs text-slate-500">
+//             Trouvez votre répétiteur
+//           </p>
+//         </div>
+//       </nav>
+
+//       {/* ============================================================
+//           BOTTOM NAVIGATION BAR — MOBILE UNIQUEMENT (md-)
+//       ============================================================= */}
+//       <nav
+//         aria-label="Navigation principale mobile"
+//         className="
+//           fixed inset-x-0 bottom-0 z-50
+//           border-t border-white/[0.08]
+//           bg-slate-950/95 backdrop-blur-2xl
+//           shadow-[0_-12px_40px_rgba(0,0,0,0.4)]
+//           md:hidden
+//         "
+//       >
+//         <ul
+//           className="
+//             mx-auto flex w-full max-w-lg items-stretch justify-around
+//             px-2 pt-2
+//             pb-[max(0.5rem,env(safe-area-inset-bottom))]
+//           "
+//         >
+//           {filteredItems.map((item) => {
+//             const Icon = item.icon;
+//             const isActive = isItemActive(item.path);
+
+//             return (
+//               <li key={item.path} className="flex-1">
+//                 <button
+//                   type="button"
+//                   onClick={() => handleNavigate(item.path)}
+//                   aria-current={isActive ? 'page' : undefined}
+//                   aria-label={item.label}
+//                   className={`
+//                     group relative flex w-full flex-col items-center justify-center
+//                     gap-1 rounded-xl px-2 py-2
+//                     transition
+//                     focus-visible:outline-none
+//                     focus-visible:ring-2 focus-visible:ring-emerald-400/80
+//                     active:scale-95
+//                     ${
+//                       isActive
+//                         ? 'text-emerald-300'
+//                         : 'text-slate-500 hover:text-slate-200'
+//                     }
+//                   `}
+//                 >
+//                   {/* Indicateur actif — petit trait en haut */}
+//                   {isActive && (
+//                     <span
+//                       aria-hidden="true"
+//                       className="
+//                         absolute -top-2 h-0.5 w-8 rounded-full
+//                         bg-emerald-400
+//                         shadow-[0_0_10px_rgba(52,211,153,0.8)]
+//                       "
+//                     />
+//                   )}
+
+//                   <span
+//                     className={`
+//                       flex h-9 w-9 items-center justify-center rounded-xl
+//                       transition
+//                       ${
+//                         isActive
+//                           ? 'bg-emerald-400/15 text-emerald-300'
+//                           : 'bg-transparent text-slate-500 group-hover:bg-white/[0.05] group-hover:text-slate-200'
+//                       }
+//                     `}
+//                   >
+//                     <Icon
+//                       size={19}
+//                       strokeWidth={isActive ? 2.5 : 2}
+//                       aria-hidden="true"
+//                     />
+//                   </span>
+
+//                   <span
+//                     className={`
+//                       text-[10px] leading-none tracking-tight
+//                       ${isActive ? 'font-bold' : 'font-medium'}
+//                     `}
+//                   >
+//                     {item.label}
+//                   </span>
+//                 </button>
+//               </li>
+//             );
+//           })}
+//         </ul>
+//       </nav>
+//     </>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 'use client';
 
 import {
@@ -1031,6 +1386,9 @@ export default function MobileNav({ userRole }: MobileNavProps) {
 
       {/* ============================================================
           BOTTOM NAVIGATION BAR — MOBILE UNIQUEMENT (md-)
+          Padding symétrique, pas de safe-area-inset-bottom :
+          le layout n'utilise pas viewport-fit=cover, donc le
+          navigateur gère déjà la zone safe tout seul.
       ============================================================= */}
       <nav
         aria-label="Navigation principale mobile"
@@ -1045,8 +1403,7 @@ export default function MobileNav({ userRole }: MobileNavProps) {
         <ul
           className="
             mx-auto flex w-full max-w-lg items-stretch justify-around
-            px-2 pt-2
-            pb-[max(0.5rem,env(safe-area-inset-bottom))]
+            gap-1 px-2 py-1.5
           "
         >
           {filteredItems.map((item) => {
@@ -1062,7 +1419,7 @@ export default function MobileNav({ userRole }: MobileNavProps) {
                   aria-label={item.label}
                   className={`
                     group relative flex w-full flex-col items-center justify-center
-                    gap-1 rounded-xl px-2 py-2
+                    gap-1 rounded-xl px-2 py-1.5
                     transition
                     focus-visible:outline-none
                     focus-visible:ring-2 focus-visible:ring-emerald-400/80
@@ -1074,12 +1431,11 @@ export default function MobileNav({ userRole }: MobileNavProps) {
                     }
                   `}
                 >
-                  {/* Indicateur actif — petit trait en haut */}
                   {isActive && (
                     <span
                       aria-hidden="true"
                       className="
-                        absolute -top-2 h-0.5 w-8 rounded-full
+                        absolute -top-1.5 h-0.5 w-8 rounded-full
                         bg-emerald-400
                         shadow-[0_0_10px_rgba(52,211,153,0.8)]
                       "
